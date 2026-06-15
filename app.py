@@ -1,1301 +1,2019 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import plotly.graph_objects as go
-from fpdf import FPDF
-import time
-import random
-import urllib.parse
-from datetime import datetime
+"""
+AURADEX ARQUÉTIPOS SUPREMO
+Premium Archetype Intelligence Platform
+"""
 
-# ==============================================================================
-# 1. CONFIGURAÇÕES GERAIS E ARQUITETURA VISUAL (DARK LUXURY TERMINAL)
-# ==============================================================================
+import streamlit as st
+import plotly.graph_objects as go
+import json
+import time
+import io
+import base64
+from datetime import datetime
+import random
+
+# ─────────────────────────────────────────────
+#  PAGE CONFIG
+# ─────────────────────────────────────────────
 st.set_page_config(
-    page_title="AuraDex Arquétipos Supremo | Inteligência Comportamental",
-    page_icon="⚜️",
+    page_title="AuraDex · Arquétipos Supremo",
+    page_icon="◈",
     layout="centered",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
 )
 
-# Injeção de CSS customizado para emular um Dashboard Executivo Premium / Apple & Ferrari Design
+# ─────────────────────────────────────────────
+#  GLOBAL CSS — DARK LUXURY THEME
+# ─────────────────────────────────────────────
 st.markdown("""
-    <style>
-    /* Estilos Globais de Fundo e Texto */
-    .stApp {
-        background-color: #0d1117;
-        color: #f0f3f6;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    
-    /* Cabeçalhos e Títulos Luxuosos */
-    h1, h2, h3, h4 {
-        color: #d4af37 !important;
-        font-family: "Times New Roman", Georgia, serif;
-        font-weight: 300;
-        letter-spacing: 2px;
-        text-align: center;
-    }
-    h1 { font-size: 2.4rem; line-height: 1.3; margin-bottom: 0.5rem; }
-    h2 { font-size: 1.8rem; border-bottom: 1px solid rgba(212, 175, 55, 0.2); padding-bottom: 0.5rem; margin-top: 2rem; }
-    
-    /* Subtítulos de Alta Conversão */
-    .luxury-subtitle {
-        text-align: center;
-        font-size: 1.15rem;
-        color: #8b949e;
-        max-width: 650px;
-        margin: 0 auto 2.5rem auto;
-        line-height: 1.6;
-        font-weight: 300;
-    }
-    
-    /* Métricas e Indicadores estilo Bloomberg */
-    .bloomberg-container {
-        display: flex;
-        justify-content: space-around;
-        background: linear-gradient(180deg, #161b22 0%, #0f141c 100%);
-        border: 1px solid rgba(212, 175, 55, 0.15);
-        padding: 1.5rem;
-        border-radius: 8px;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    }
-    .bloomberg-box {
-        text-align: center;
-    }
-    .bloomberg-val {
-        font-family: "Courier New", Courier, monospace;
-        font-size: 1.8rem;
-        color: #d4af37;
-        font-weight: bold;
-    }
-    .bloomberg-lbl {
-        font-size: 0.75rem;
-        color: #8b949e;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-        margin-top: 4px;
-    }
-    
-    /* Cartões estruturados com Glassmorphic Subtle Effect */
-    .glass-card {
-        background: rgba(22, 27, 34, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-left: 3px solid #d4af37;
-        padding: 2rem;
-        border-radius: 8px;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-    }
-    .glass-card-title {
-        font-family: "Times New Roman", serif;
-        color: #d4af37;
-        font-size: 1.3rem;
-        margin-bottom: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    /* Botões Customizados Premium */
-    .stButton>button {
-        width: 100%;
-        background: linear-gradient(135deg, #b8860b 0%, #e6ca65 50%, #996515 100%);
-        color: #0d1117 !important;
-        font-weight: bold;
-        font-size: 1.05rem;
-        letter-spacing: 2px;
-        border: none !important;
-        padding: 14px 20px;
-        border-radius: 6px;
-        text-transform: uppercase;
-        transition: all 0.3s ease-in-out;
-        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
-    }
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 25px rgba(212, 175, 55, 0.4);
-        color: #0d1117 !important;
-        background: linear-gradient(135deg, #e6ca65 0%, #ffffff 100%);
-    }
-    
-    /* Customização do Radio Input da Streamlit */
-    div[data-testid="stRadio"] > label {
-        color: #d4af37 !important;
-        font-weight: 600;
-    }
-    div[data-testid="stRadio"] label[data-testid="stWidgetLabel"] {
-        font-size: 1.15rem !important;
-        margin-bottom: 15px !important;
-    }
-    
-    /* Barra de progresso dourada */
-    .stProgress > div > div > div > div {
-        background-color: #d4af37;
-    }
-    
-    .ticker-alert {
-        color: #ff4d4d;
-        border: 1px solid rgba(255, 77, 77, 0.3);
-        background: rgba(255, 77, 77, 0.05);
-        padding: 1rem;
-        border-radius: 6px;
-        font-size: 0.95rem;
-        line-height: 1.5;
-        margin: 1.5rem 0;
-    }
-    </style>
-""", unsafe_allow_html=True)
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
-# ==============================================================================
-# 2. BANCO DE DADOS DE ARQUÉTIPOS E SISTEMA PSICOMÉTRICO (COMPLETO)
-# ==============================================================================
-archetypes_data = {
-    "O Sábio": {
-        "rarity": "5.2%",
-        "index": 94,
-        "radar": [50, 80, 98, 45, 65, 85], # Liderança, Criatividade, Int. Estratégica, Influência, Coragem, Adaptabilidade
-        "desc": "Guiado pelo rigor analítico, clareza lógica e busca incessante pela verdade factual. Você opera como uma inteligência estratégica superior, decodificando caos em dados acionáveis.",
-        "secundario": "O Visionário",
-        "sec_desc": "Fornece uma camada de antecipação macroeconômica e leitura de tendências de longo prazo antes que elas se manifestem no mercado tradicional.",
-        "sombra": "O Dogmático / Paralisia por Análise. Tendência a reter decisões críticas sob a justificativa de necessitar de mais dados, gerando inércia tática e distanciamento emocional nas relações.",
-        "financeiro": "Investidor Estruturado de Longo Prazo. Score: 88/100. Excelente blindagem contra impulsividade patrimonial; risco concentrado em custo de oportunidade devido ao excesso de prudência.",
-        "amoroso": "Busca afinidade intelectual absoluta e sinergia de propósitos. Alinhamento de alto nível com 'O Governante' e 'O Criador'. Exige espaço de solitude cognitiva.",
-        "carreira": "Chief Strategy Officer (CSO), Diretor de Inteligência de Mercado, Auditor de Riscos Complexos, Consultor Macroeconômico.",
-        "talento_oculto": "Hiper-foco preditivo: capacidade de identificar inconsistências em contratos ou modelos de negócios complexos em poucos segundos de exposição.",
-        "plano_evolucao": [
-            "Estabelecer a Regra dos 70%: Tomar decisões executivas e pessoais quando possuir 70% das informações necessárias, mitigando a paralisia.",
-            "Inserir blocos semanais de intuição pura e atividades sem métricas de performance.",
-            "Praticar escuta empática ativa sem emitir diagnósticos corretivos imediatos."
-        ],
-        "compat_matrix": "Elevada com O Governante (estabilidade) e O Criador (inovação estruturada); Atrito potencial com O Bobo da Corte.",
-        "frase": "A assimetria de informação é a única vantagem real e permanente no tabuleiro da vida."
-    },
-    "O Herói": {
-        "rarity": "7.8%",
-        "index": 91,
-        "radar": [95, 45, 75, 60, 98, 70],
-        "desc": "Definido pela força de vontade inabalável, agressividade competitiva saudável e fixação por metas de alta performance. Você prospera no epicentro da pressão.",
-        "secundario": "O Governante",
-        "sec_desc": "Agrega competência de governança e estruturação de processos ao ímpeto natural de conquista e execução direta.",
-        "sombra": "O Tirano Exausto. Obsessão em carregar o peso operacional integral da organização ou família; incapacidade crônica de demonstrar vulnerabilidade culminando em Burnout tático.",
-        "financeiro": "Alocador de Capital Agressivo. Score: 82/100. Impulsiona o patrimônio via empreendedorismo ou alavancagem rápida; vulnerável a cisnes negros por falta de diversificação defensiva.",
-        "amoroso": "Postura de provedor e protetor sistêmico. Sinergia premium com 'O Cuidador' e 'O Inocente'. Risco de projetar dinâmicas de competição dentro do relacionamento.",
-        "carreira": "Head de Venture Capital, Gestor de Turnaround, Líder de Operações Especiais, Fundador Scale-Up.",
-        "talento_oculto": "Resiliência sob fogo cruzado: sua performance cognitiva aumenta proporcionalmente à gravidade da crise externa.",
-        "plano_evolucao": [
-            "Implementar delegação radical com tolerância a erros metodológicos de liderados.",
-            "Mapear e respeitar os limites biológicos pessoais através de pausas compulsórias.",
-            "Praticar a aceitação da ajuda externa como um ato de coragem estratégica."
-        ],
-        "compat_matrix": "Alta sinergia com O Cuidador e O Inocente; Conflito direto com O Rebelde.",
-        "frase": "O destino não é uma questão de chance, é uma questão de escolha sob extrema pressão."
-    },
-    "O Governante": {
-        "rarity": "3.4%",
-        "index": 97,
-        "radar": [100, 50, 90, 85, 75, 55],
-        "desc": "Nascido para a liderança institucional, governança corporativa e consolidação de poder estruturado. Sua mente opera como um sistema operacional de ordem e escalabilidade.",
-        "secundario": "O Sábio",
-        "sec_desc": "Garante ancoragem teórica e dados empíricos inquestionáveis para sustentar os decretos e decisões de liderança.",
-        "sombra": "O Ditador Paranoico. Medo subliminar de traição ou perda de controle operacional; tendência a centralizar processos e sufocar a autonomia criativa dos liderados.",
-        "financeiro": "Preservador Patrimonial Corporativo. Score: 95/100. Maestria na engenharia tributária e blindagem de ativos. Risco associado à rigidez excessiva em novos mercados disruptivos.",
-        "amoroso": "Exige lealdade absoluta e manutenção de padrões sociais elevados. Conexão profunda com 'O Sábio' e 'O Mago' (que traz a inovação complementar).",
-        "carreira": "CEO, Conselheiro de Administração, Gestor de Private Equity, Diretor de Governança e Compliance.",
-        "talento_oculto": "Visão sistêmica institucional: capacidade imediata de estruturar organogramas e fluxos de caixa eficientes em cenários caóticos.",
-        "plano_evolucao": [
-            "Promover rituais de inovação descentralizada onde sua voz seja a última a ser ouvida.",
-            "Separar explicitamente a identidade de Líder Executivo da identidade de parceiro/pai.",
-            "Praticar vulnerabilidade intencional com círculos restritos de confiança máxima."
-        ],
-        "compat_matrix": "Sinergia impecável com O Sábio; Riscos de colisão de ego com O Herói e outro Governante.",
-        "frase": "A ordem e a previsibilidade pavimentam o único caminho real para a imortalidade do legado."
-    },
-    "O Mago": {
-        "rarity": "2.9%",
-        "index": 96,
-        "radar": [80, 92, 88, 90, 60, 90],
-        "desc": "Mestre da alquimia mental, transformação cultural e catalisador de transições de fase complexas. Você altera a percepção da realidade ao seu redor.",
-        "secundario": "O Visionário",
-        "sec_desc": "Traduz insights metafísicos e conceituais em designs tecnológicos ou modelos de negócios de alta disrupção.",
-        "sombra": "O Manipulador Sutil. Utilização inconsciente do magnetismo pessoal e da retórica para conduzir indivíduos a cenários de interesse estritamente pessoal, camuflado de propósito coletivo.",
-        "financeiro": "Estrategista de Oportunidades Assimétricas. Score: 89/100. Lucra alto antecipando bolhas e movimentos psicológicos de massa; risco de volatilidade severa por excesso de otimismo.",
-        "amoroso": "Busca conexões de intensidade transcendente e transformadora. Compatibilidade master com 'O Amante' e 'O Criador'. Detesta superficialidade utilitarista.",
-        "carreira": "Diretor de Inovação Disruptiva, Head de Growth Marketing Psicológico, Fundador de Tech de Fronteira, Neurostrategist.",
-        "talento_oculto": "Leitura fria de microexpressões e dinâmicas ocultas de poder em salas de reunião.",
-        "plano_evolucao": [
-            "Ancorar visões abstratas em métricas semanais auditáveis por terceiros rígidos.",
-            "Garantir transparência radical nas intenções antes de iniciar processos de persuasão.",
-            "Cultivar práticas diárias de conexão com a realidade física e operacional básica."
-        ],
-        "compat_matrix": "Alta afinidade com O Criador e O Amante; Distanciamento metodológico do Sábio.",
-        "frase": "A realidade não é fixa; ela se dobra diante de uma vontade perfeitamente alinhada e focada."
-    },
-    "O Criador": {
-        "rarity": "4.8%",
-        "index": 93,
-        "radar": [65, 100, 80, 70, 70, 80],
-        "desc": "Impulsionado pela necessidade visceral de autoria, inovação de produto e materialização de conceitos inexistentes. Você molda o ambiente físico e digital através do design.",
-        "secundario": "O Explorador",
-        "sec_desc": "Injeta insumos estéticos multiculturais e experiências geográficas diversificadas diretamente no processo criativo primário.",
-        "sombra": "O Perfeccionista Paralisado. Autocrítica severa que impede a entrega (o 'launch') de projetos funcionais; incapacidade de aceitar que o feito supera o perfeito no mercado.",
-        "financeiro": "Gerador de Ativos Intelectuais. Score: 85/100. Capacidade maciça de monetizar marcas e patentes. Risco latente de subprecificar o próprio valor por foco excessivo no processo produtivo.",
-        "amoroso": "Precisa de um parceiro que atue como âncora de estabilidade sem castrar o fluxo de imaginação. Match ideal com 'O Sábio' e 'O Cuidador'.",
-        "carreira": "Chief Product Officer (CPO), Diretor de Criação High-End, Arquiteto de Ecossistemas Digitais, Fundador de Startups Saas.",
-        "talento_oculto": "Síntese conceitual: unir indústrias completamente distintas em um único produto altamente lucrativo.",
-        "plano_evolucao": [
-            "Adotar a metodologia MVP (Mínimo Produto Viável) como padrão inegociável de vida.",
-            "Externalizar a gestão financeira e operacional para perfis do tipo Governante ou Sábio.",
-            "Praticar o desapego emocional de ideias obsoletas que o mercado já rejeitou."
-        ],
-        "compat_matrix": "Sinergia excelente com O Explorador e O Mago; Conflito de rotina com O Governante.",
-        "frase": "A única forma de prever o futuro econômico é projetando e construindo a infraestrutura dele."
-    },
-    "O Explorador": {
-        "rarity": "6.1%",
-        "index": 89,
-        "radar": [60, 75, 70, 65, 85, 100],
-        "desc": "A busca pela autonomia existencial e quebra de barreiras geográficas dita sua assinatura comportamental. Você rejeita restrições limitantes.",
-        "secundario": "O Rebelde",
-        "sec_desc": "Amplifica o desejo de liberdade com uma postura ativa de rejeição a dogmas corporativos obsoletos.",
-        "sombra": "O Nômade Crônico / Instabilidade. Dificuldade severa em aprofundar vínculos emocionais, contratos de longo prazo e consolidação de patrimônio físico por aversão ao confinamento.",
-        "financeiro": "Investidor Descentralizado / Globalizado. Score: 74/100. Pioneiro em ativos digitais, moedas estrangeiras e arbitragem internacional. Risco: falta de estabilidade imobiliária.",
-        "amoroso": "Exige independência de locomoção e projetos paralelos autônomos. Conectividade premium com 'O Criador' e 'O Visionário'.",
-        "carreira": "Líder de Expansão Internacional, Consultor de Riscos Geopolíticos, Fotógrafo Editorial High-Ticket, Venture Scout.",
-        "talento_oculto": "Adaptabilidade imediata a choques culturais e capacidade de mapear oportunidades em territórios inexplorados.",
-        "plano_evolucao": [
-            "Construir uma base física fixa ('âncora patrimonial') mesmo que passe meses fora dela.",
-            "Assumir um compromisso institucional de no mínimo 24 meses em um grande projeto para treinar profundidade.",
-            "Aprender a diferenciar restrição externa de tédio psicológico interno."
-        ],
-        "compat_matrix": "Combina perfeitamente com O Criador e O Visionário; Rejeição imediata por parte do Governante.",
-        "frase": "A verdadeira segurança não reside na estabilidade de um cargo, mas na própria capacidade de navegar no desconhecido."
-    },
-    "O Rebelde": {
-        "rarity": "4.1%",
-        "index": 92,
-        "radar": [75, 85, 80, 60, 95, 85],
-        "desc": "Sua mente atua como um agente de destruição criativa. Você identifica a obsolescência das estruturas vigentes e possui a coragem tática de implodi-las.",
-        "secundario": "O Mago",
-        "sec_desc": "Permite que a quebra de regras tradicionais seja feita de forma cirúrgica e magnética, potencializando o impacto cultural.",
-        "sombra": "O Niilista Destrutivo. Tendência a sabotar sistemas e parcerias benéficas puramente pelo impulso reativo de não se submeter a nenhuma forma de liderança ou alinhamento.",
-        "financeiro": "Especulador de Alta Volatilidade. Score: 79/100. Lucra em momentos de pânico de mercado e posições short. Risco: ruína financeira por falta de ativos de proteção clássica.",
-        "amoroso": "Seduzido pelo desafio intelectual e anticonvencionalismo. Relações intensas com 'O Amante' e 'O Explorador'. Requer espaço para contestação.",
-        "carreira": "Fundador de Startups Disruptivas (Cripto/IA), Turnaround Manager de Empresas Falidas, Especialista em Segurança Ofensiva.",
-        "talento_oculto": "Detecção cirúrgica de fragilidades estruturais e hipocrisias em discursos corporativos tradicionais.",
-        "plano_evolucao": [
-            "Garantir que possui um projeto arquitetado para colocar no lugar da estrutura que está destruindo.",
-            "Desenvolver inteligência política básica para usar o sistema a seu favor em vez de apenas colidir.",
-            "Praticar rituais de gratidão para estabilizar o viés de hostilidade defensiva."
-        ],
-        "compat_matrix": "Afinidade com O Explorador e O Mago; Colisão frontal inevitável com O Governante.",
-        "frase": "As regras tradicionais são apenas as cicatrizes de problemas antigos resolvidos por mentes que já morreram."
-    },
-    "O Amante": {
-        "rarity": "8.5%",
-        "index": 88,
-        "radar": [65, 80, 60, 98, 55, 82],
-        "desc": "Impulsionado pelo refinamento estético, inteligência relacional, magnetismo pessoal e busca por experiências sensoriais de alto padrão. Você domina a arte da conexão.",
-        "secundario": "O Criador",
-        "sec_desc": "Direciona a sensibilidade estética e paixão existencial para a criação de marcas de luxo, obras de arte ou designs icônicos.",
-        "sombra": "O Camaleão Dependente. Aniquilação gradual da própria identidade e dos valores individuais para garantir a validação e o afeto contínuo do parceiro ou do ecossistema social.",
-        "financeiro": "Consumidor Premium / Investidor de Estilo de Vida. Score: 71/100. Excelente capacidade de atrair capital de alto valor por networking; risco sério de fluxo de caixa negativo por manter um lifestyle luxuoso prematuro.",
-        "amoroso": "Entrega simbiótica, passional e com foco em experiências exclusivas. Conexão imediata com 'O Mago' e 'O Herói'. Risco de ciúme territorial.",
-        "carreira": "Head de Marcas de Luxo, Diretor de Relacionamento Ultra-High-Net-Worth (UHNW), Consultor de Imagem Executiva, Especialista em M&A Interpessoal.",
-        "talento_oculto": "Persuasão orgânica através da calibração imediata do seu tom de voz e postura com o desejo inconsciente do interlocutor.",
-        "plano_evolucao": [
-            "Estabelecer uma conta bancária inegociável de acumulação patrimonial blindada de impulsos estéticos.",
-            "Passar períodos de jejum social para recalibrar sua identidade individual sem interferências externas.",
-            "Separar o valor próprio intrínseco do nível de aprovação recebido da sua rede de contatos."
-        ],
-        "compat_matrix": "Excelente com O Mago e O Herói; Desconexão de valores com O Sábio racional.",
-        "frase": "O valor percebido de um ativo ou de uma vida é medido pela intensidade da emoção que ele evoca."
-    },
-    "O Cuidador": {
-        "rarity": "10.2%",
-        "index": 87,
-        "radar": [70, 50, 75, 85, 60, 80],
-        "desc": "A espinha dorsal humana da sua organização ou família. Sua liderança se manifesta pelo suporte estratégico, mentoria de alto nível e criação de ambientes de segurança psicológica.",
-        "secundario": "O Sábio",
-        "sec_desc": "Enriquece a inclinação natural de apoio com diagnósticos precisos, conselhos embasados e sabedoria institucional.",
-        "sombra": "O Mártir Ressentido. Sobrecarga voluntária com os problemas alheios, gerando cobranças indiretas e ressentimento mascarado quando o ecossistema não retribui a dedicação na mesma proporção.",
-        "financeiro": "Alocador Conservador Defensivo. Score: 78/100. Foco em previdência estruturada, imóveis tradicionais e seguros de proteção familiar. Risco: baixa rentabilidade real por aversão ao risco.",
-        "amoroso": "Acolhedor, incondicional e estruturante. Proporciona estabilidade premium para arquétipos de alta performance como 'O Herói' e 'O Governante'.",
-        "carreira": "Chief People Officer (CPO), Diretor de Fundações Filantrópicas, Gestor de Clínicas de Alta Complexidade, Head de Customer Success Executivo.",
-        "talento_oculto": "Mediação de conflitos críticos de equipe através da neutralização imediata de tensões de ego.",
-        "plano_evolucao": [
-            "Instituir a política do 'Não Estratégico' para demandas que competem com o seu tempo pessoal de evolução.",
-            "Cobrar o valor de mercado real e justo por seus serviços sem sentimentos de culpa social.",
-            "Permitir que as pessoas sofram as consequências naturais de seus próprios erros operacionais."
-        ],
-        "compat_matrix": "Casamento perfeito com O Herói e O Governante; Desgastado por interações constantes com O Rebelde.",
-        "frase": "A verdadeira escala de uma liderança é medida pela quantidade de líderes autônomos gerados sob sua mentoria."
-    },
-    "O Inocente": {
-        "rarity": "12.1%",
-        "index": 84,
-        "radar": [45, 60, 70, 75, 50, 90],
-        "desc": "Ancorado na transparência ética, integridade corporativa impecável e otimismo pragmático. Você atua como o guardião dos valores morais da marca ou família.",
-        "secundario": "O Sábio",
-        "sec_desc": "Garante que o otimismo inato seja protegido por conformidade legal, dados factuais e análise histórica preventiva.",
-        "sombra": "O Negacionista Estratégico. Tendência a ignorar deliberadamente red flags contratuais, falhas graves de caráter em parceiros ou indicadores de crise para não quebrar a ilusão de harmonia perfeita.",
-        "financeiro": "Investidor Passivo em Índices. Score: 75/100. Prefere fundos ESG, títulos públicos e aportes recorrentes sem trade ativo. Risco: vulnerabilidade a fraudes sofisticadas por excesso de boa-fé.",
-        "amoroso": "Busca transparência absoluta, romantismo clássico e estabilidade pacífica. Sinergia excelente com 'O Herói' e 'O Cuidador'. Sofre severamente com jogos psicológicos.",
-        "carreira": "Diretor de Ética Corporativa, Ouvidor-Geral de Grandes Corporações, Head de Cultura e Valores, Consultor de Sustentabilidade Executiva.",
-        "talento_oculto": "Purificação ambiental: capacidade de restaurar a confiança em equipes severamente traumatizadas por gestões abusivas.",
-        "plano_evolucao": [
-            "Implementar auditorias externas neutras em todos os seus contratos e parcerias comerciais relevantes.",
-            "Estudar ativamente cenários de crise e psicologia de fraudes para desenvolver anticorpos cognitivos.",
-            "Compreender que o conflito aberto e honesto é uma ferramenta de limpeza e evolução, não de destruição."
-        ],
-        "compat_matrix": "Acolhido pelo Cuidador e Herói; Facilmente manipulado pelo Mago se desatento.",
-        "frase": "A integridade intransigente não é uma fraqueza ingênua, é o padrão ético mais elevado de poder."
-    },
-    "O Fora da Lei": {
-        "rarity": "3.8%",
-        "index": 93,
-        "radar": [80, 88, 85, 65, 96, 80],
-        "desc": "Identificado pela independência radical, agressividade competitiva de vanguarda e ousadia para redefinir as fronteiras legais ou mercadológicas. Você cria novos oceanos azuis desafiando o status quo.",
-        "secundario": "O Visionário",
-        "sec_desc": "Dota o impulso transgressor de uma bússola tecnológica exata, direcionando a destruição de paradigmas para mercados bilionários do futuro.",
-        "sombra": "O Foragido Social. Tendência a isolar-se completamente de associações estratégicas importantes por orgulho ferido ou recusa intransigente em cumprir formalidades institucionais básicas.",
-        "financeiro": "Alocador de Capital de Fronteira. Score: 81/100. Ganhos astronômicos em mercados não regulados, commodities exóticas ou investimentos early-stage de alto risco. Risco de litígios fiscais severos.",
-        "amoroso": "Intenso, magnético e imprevisível. Exige um parceiro que seja cúmplice tático em sua jornada insurgente. Match poderoso com 'O Rebelde' e 'O Amante'.",
-        "carreira": "Fundador de Tech Startups Disruptivas, Gestor de Crises Internacionais de Alto Escalão, Arbitrador de Ativos Distressed.",
-        "talento_oculto": "Identificar falhas legais e lacunas de mercado regulatórias antes que os concorrentes tradicionais percebam a brecha.",
-        "plano_evolucao": [
-            "Contratar assessoria jurídica e contábil de nível elite para blindar as transgressões de mercado legítimas.",
-            "Evitar quebras de protocolo puramente egóicas que não tragam retorno sobre o investimento estratégico.",
-            "Aprender a arte da diplomacia camuflada: agir como insurgente, mas apresentar-se com a roupagem institucional correta."
-        ],
-        "compat_matrix": "Sinergia com O Amante e O Explorador; Conflito sangrento com O Governante.",
-        "frase": "A história econômica é escrita pelos audaciosos que legalizaram suas visões após conquistarem o mercado."
-    },
-    "O Visionário": {
-        "rarity": "2.2%",
-        "index": 98,
-        "radar": [90, 95, 92, 85, 80, 85],
-        "desc": "Sua assinatura cognitiva está sintonizada com cenários macroeconômicos e tecnológicos situados a 10 anos de distância. Você atua como o arquiteto de futuros possíveis.",
-        "secundario": "O Sábio",
-        "sec_desc": "Garante modelagem matemática e fundamentação epistemológica rigorosa para validar projeções futuras aparentemente insanas.",
-        "sombra": "O Profeta Desconectado. Risco crônico de alienação em relação às demandas operacionais presentes do fluxo de caixa atual, comprometendo a sustentabilidade financeira imediata por foco exclusivo no amanhã.",
-        "financeiro": "Estrategista de Venture Capital e Teses de Fronteira. Score: 92/100. Multiplica o patrimônio ao apostar em tendências macro antes do consenso de mercado. Risco: iliquidez por antecipação excessiva.",
-        "amoroso": "Requer profundidade de diálogo abstrato e suporte para suas oscilações intelectuais. Conexão sublime com 'O Criador' e 'O Sábio'.",
-        "carreira": "Chief Innovation Officer, Venture Capitalist Fundador, Designer de Ecossistemas Tecnológicos, Futurologista de Conglomerados.",
-        "talento_oculto": "Reconhecimento instantâneo de padrões emergentes em massas de dados caóticas e desconexas.",
-        "plano_evolucao": [
-            "Criar uma métrica de validação de curto prazo para garantir a oxigenação financeira do presente.",
-            "Associar-se a operadores táticos implacáveis (perfis Herói/Governantes) que traduzam suas visões em planilhas diárias.",
-            "Praticar o aterramento físico e mental diário por meio de métricas operacionais simples."
-        ],
-        "compat_matrix": "Acoplamento perfeito com O Criador e O Sábio; Incompreendido por perfis puramente Conservadores.",
-        "frase": "Aqueles que gerenciam apenas o presente estão condenados a serem governados por quem projetou o futuro."
-    }
+:root {
+  --black:    #0a0c0f;
+  --black2:   #0d1117;
+  --graphite: #161b22;
+  --surface:  #1a1f2e;
+  --border:   #21262d;
+  --gold:     #d4af37;
+  --gold2:    #e8c95d;
+  --gold3:    #b8960c;
+  --white:    #f0f1f3;
+  --white2:   #c9ced8;
+  --dim:      #7d8590;
+  --accent:   #7c5cbf;
 }
 
-# 25 Questões Psicométricas Avançadas Corporativas / Clínicas
-questions_pool = [
+html, body, [data-testid="stAppViewContainer"] {
+  background: var(--black2) !important;
+  color: var(--white) !important;
+}
+
+[data-testid="stAppViewContainer"] > .main {
+  background: var(--black2) !important;
+}
+
+section[data-testid="stSidebar"] { display: none; }
+[data-testid="stHeader"] { background: transparent !important; }
+[data-testid="stToolbar"] { display: none; }
+footer { display: none !important; }
+#MainMenu { display: none; }
+
+* { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+
+h1, h2, h3 { font-family: 'Cormorant Garamond', serif !important; }
+
+/* ─── BUTTONS ─── */
+.stButton > button {
+  width: 100%;
+  background: linear-gradient(135deg, #d4af37 0%, #b8960c 50%, #d4af37 100%) !important;
+  background-size: 200% 200% !important;
+  color: #0a0c0f !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 0.85rem 2rem !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 24px rgba(212,175,55,0.25), inset 0 1px 0 rgba(255,255,255,0.15) !important;
+}
+.stButton > button:hover {
+  box-shadow: 0 0 40px rgba(212,175,55,0.45), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+  transform: translateY(-1px) !important;
+}
+.stButton > button:active { transform: translateY(0) !important; }
+
+/* ─── INPUTS ─── */
+.stTextInput > div > div > input,
+.stSelectbox > div > div > div,
+.stNumberInput > div > div > input {
+  background: var(--graphite) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 4px !important;
+  color: var(--white) !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  padding: 0.65rem 1rem !important;
+}
+.stTextInput > div > div > input:focus,
+.stSelectbox > div > div > div:focus {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 2px rgba(212,175,55,0.12) !important;
+}
+
+.stSelectbox > div > div { background: var(--graphite) !important; }
+.stSelectbox [data-baseweb="select"] > div { background: var(--graphite) !important; border-color: var(--border) !important; }
+
+label, .stTextInput label, .stSelectbox label, .stNumberInput label {
+  color: var(--white2) !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+}
+
+/* ─── RADIO ─── */
+.stRadio > label { color: var(--white2) !important; font-size: 0.75rem !important; letter-spacing: 0.1em !important; text-transform: uppercase !important; }
+.stRadio > div { gap: 0.5rem !important; }
+.stRadio > div > label {
+  background: var(--graphite) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 4px !important;
+  padding: 0.65rem 1rem !important;
+  color: var(--white2) !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 0.85rem !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  width: 100% !important;
+}
+.stRadio > div > label:hover { border-color: var(--gold3) !important; color: var(--white) !important; }
+div[data-baseweb="radio"] input:checked + div + div { color: var(--gold) !important; }
+
+/* ─── PROGRESS ─── */
+.stProgress > div > div { background: var(--border) !important; border-radius: 2px !important; }
+.stProgress > div > div > div { background: linear-gradient(90deg, var(--gold3), var(--gold)) !important; border-radius: 2px !important; }
+
+/* ─── DIVIDER ─── */
+hr { border-color: var(--border) !important; }
+
+/* ─── COMPONENTS ─── */
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 2rem 0;
+}
+
+.glass-card {
+  background: rgba(22,27,34,0.7);
+  border: 1px solid rgba(212,175,55,0.15);
+  border-radius: 8px;
+  padding: 1.75rem 2rem;
+  backdrop-filter: blur(12px);
+  margin-bottom: 1.25rem;
+}
+
+.metric-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(212,175,55,0.08);
+  border: 1px solid rgba(212,175,55,0.2);
+  border-radius: 100px;
+  padding: 0.35rem 0.85rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--gold2);
+  text-transform: uppercase;
+}
+
+.archetype-title {
+  font-family: 'Cormorant Garamond', serif !important;
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.section-eyebrow {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold3);
+  margin-bottom: 0.5rem;
+}
+
+.lock-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--dim);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+}
+.lock-item.unlocked { color: var(--white2); }
+.lock-icon { font-size: 0.9rem; min-width: 1.2rem; }
+
+.price-tag {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.rarity-bar {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+.rarity-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold3), var(--gold2));
+  border-radius: 3px;
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+}
+.stat-label { color: var(--dim); }
+.stat-value { color: var(--gold2); font-weight: 600; }
+
+.warning-box {
+  background: rgba(212,175,55,0.06);
+  border: 1px solid rgba(212,175,55,0.3);
+  border-left: 3px solid var(--gold);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  color: var(--gold2);
+  line-height: 1.6;
+}
+
+.cta-headline {
+  font-family: 'Cormorant Garamond', serif !important;
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.25;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.45rem 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  color: var(--white2);
+}
+.benefit-check { color: var(--gold); font-size: 0.9rem; margin-top: 0.05rem; }
+
+.hero-number {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 4.5rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+}
+
+.tag-pill {
+  display: inline-block;
+  background: rgba(212,175,55,0.1);
+  border: 1px solid rgba(212,175,55,0.25);
+  border-radius: 3px;
+  padding: 0.2rem 0.6rem;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold2);
+  margin: 0.15rem;
+}
+
+.blurred-text {
+  filter: blur(5px);
+  user-select: none;
+  color: var(--white2);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.premium-section-header {
+  background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(124,92,191,0.05));
+  border: 1px solid rgba(212,175,55,0.2);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.score-ring {
+  text-align: center;
+  padding: 1rem;
+}
+
+/* ─── QUESTION CARD ─── */
+.question-card {
+  background: var(--graphite);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.5rem 1.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.q-number {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold3);
+  margin-bottom: 0.65rem;
+}
+
+.q-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: var(--white);
+  line-height: 1.4;
+  margin-bottom: 1.25rem;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────
+#  ARCHETYPE DATA
+# ─────────────────────────────────────────────
+ARCHETYPES = {
+    "O Sábio": {
+        "symbol": "◎",
+        "rarity": 7.2,
+        "tagline": "A mente que ilumina o que os outros não enxergam",
+        "description": "Você possui uma capacidade rara de síntese intelectual. Seu cérebro opera como um processador de padrões — enxerga conexões invisíveis, questiona premissas que outros aceitam cegamente e constrói sistemas de compreensão que transcendem o óbvio. Há em você uma fome insaciável por profundidade.",
+        "shadow": "A paralisia analítica e o distanciamento emocional são seus sabotadores. Você pode se tornar tão apegado à perfeição do pensamento que adia decisões importantes. O medo de estar errado às vezes congela a ação.",
+        "financial": "Perfil conservador-estratégico. Você analisa antes de investir, o que te protege de perdas impulsivas. Risco: excesso de análise pode fazer você perder janelas de oportunidade. Potencial para acumulação sólida via ativos de longo prazo.",
+        "love": "Você precisa de um parceiro que estimule sua mente. Compatível com O Amante (complemento emocional) e O Explorador (expansão intelectual). Pode ter dificuldade em expressar vulnerabilidade.",
+        "career": ["Cientista / Pesquisador", "Filósofo / Consultor Estratégico", "Analista de Dados", "Escritor", "Estrategista Corporativo"],
+        "talent": "Síntese de sistemas complexos — você pode ver o todo quando todos os outros estão presos nas partes.",
+        "evolution": ["Pratique decisões rápidas com informação incompleta", "Cultive relações emocionais sem agenda intelectual", "Publique seu pensamento — ele tem valor imenso", "Aceite que ação imperfeita supera análise perfeita"],
+        "compatible": ["O Herói", "O Explorador", "O Criador"],
+        "traits": {"Liderança": 68, "Criatividade": 82, "Inteligência Estratégica": 97, "Influência Social": 54, "Coragem": 61, "Adaptabilidade": 73},
+        "color": "#7c5cbf",
+    },
+    "O Herói": {
+        "symbol": "◆",
+        "rarity": 9.1,
+        "tagline": "Nascido para superar o que nunca foi superado",
+        "description": "Você é movido por desafios. Onde outros veem obstáculos, você vê provas. Há uma chama interior que transforma adversidade em combustível — e isso cria resultados que parecem impossíveis aos que ficam de fora. Sua vida é uma jornada de conquistas progressivas.",
+        "shadow": "O workaholism e a dificuldade de pedir ajuda são suas sombras. Você pode se tornar tão focado na missão que negligencia relacionamentos e saúde. Também há risco de definir seu valor apenas por realizações externas.",
+        "financial": "Perfil empreendedor-agressivo. Alta tolerância ao risco, o que pode gerar grandes ganhos — ou grandes perdas. Você tende a apostar em si mesmo, o que é sua maior força. Equilíbrio com reservas de segurança é essencial.",
+        "love": "Você precisa de alguém que admire genuinamente sua missão. Compatível com O Cuidador (suporte emocional) e O Mago (visão compartilhada). Cuidado com o padrão de colocar metas acima de pessoas.",
+        "career": ["Empreendedor", "Atleta / Técnico Esportivo", "CEO", "Militar de Alta Patente", "Gestor de Crises"],
+        "talent": "Mobilização sob pressão — você performa melhor exatamente quando o ambiente exige o impossível.",
+        "evolution": ["Aprenda a descansar sem culpa", "Desenvolva inteligência emocional como ferramenta de liderança", "Construa legado além das conquistas pessoais", "Pratique vulnerabilidade estratégica"],
+        "compatible": ["O Sábio", "O Governante", "O Rebelde"],
+        "traits": {"Liderança": 91, "Criatividade": 65, "Inteligência Estratégica": 78, "Influência Social": 83, "Coragem": 97, "Adaptabilidade": 72},
+        "color": "#c0392b",
+    },
+    "O Governante": {
+        "symbol": "♛",
+        "rarity": 5.3,
+        "tagline": "Poder, estrutura e a arte de construir impérios",
+        "description": "Você pensa em sistemas, estruturas e legados. Sua mente é naturalmente orientada à ordem e ao controle — não por tirania, mas por uma compreensão profunda de que grandes resultados exigem grandes organizações. Você vê o mundo como um tabuleiro de xadrez.",
+        "shadow": "O controle excessivo e a dificuldade de delegar podem isolar você e limitar seu crescimento. Você pode confundir autoridade com rigidez, e isso afasta talentos que poderiam multiplcar seus resultados.",
+        "financial": "Perfil patrimonialista. Você pensa em ativos, não apenas em renda. Tende a construir portfólios diversificados e a proteger o que tem. Risco: conservadorismo excessivo pode limitar crescimento acelerado.",
+        "love": "Você precisa de um parceiro que respeite sua necessidade de estrutura sem se submeter a ela. Compatível com O Cuidador e O Amante. Precisa aprender a abrir mão do controle nos relacionamentos.",
+        "career": ["CEO / Diretor Executivo", "Político", "Juiz / Advogado", "General / Comandante", "Gestor Patrimonial"],
+        "talent": "Construção de impérios duradouros — você não pensa em trimestres, pensa em décadas.",
+        "evolution": ["Pratique delegação radical", "Desenvolva empatia como ferramenta de poder", "Crie espaços de criatividade não estruturada", "Permita que outros liderem partes do seu projeto"],
+        "compatible": ["O Herói", "O Sábio", "O Criador"],
+        "traits": {"Liderança": 97, "Criatividade": 55, "Inteligência Estratégica": 89, "Influência Social": 86, "Coragem": 74, "Adaptabilidade": 48},
+        "color": "#d4af37",
+    },
+    "O Mago": {
+        "symbol": "✦",
+        "rarity": 4.7,
+        "tagline": "Transformador de realidades, arquiteto do impossível",
+        "description": "Você possui um talento inexplicável para transformar contextos. Onde outros veem o que é, você enxerga o que pode ser — e tem a habilidade de catalizar essa transformação. Pessoas ao seu redor frequentemente descrevem experiências ao seu lado como 'transformadoras' sem saber exatamente por quê.",
+        "shadow": "A manipulação e o messianismo são seus riscos. Sua habilidade de influenciar pode ser usada para controlar ao invés de libertar. Você também pode acreditar tanto no seu poder de transformação que subestima resistências reais.",
+        "financial": "Perfil visionário-volátil. Você enxerga oportunidades onde outros não enxergam e pode criar riqueza de forma não linear. Alto risco de perdas por excesso de confiança. Quando disciplinado, é potencialmente o arquétipo com maior upside financeiro.",
+        "love": "Você é intenso e transformador nos relacionamentos. Compatível com O Inocente (despertar) e O Explorador (aventura). Cuidado com o padrão de 'consertar' parceiros.",
+        "career": ["Visionário / Fundador de Startup", "Terapeuta / Coach Executivo", "Artista / Performer", "Inventor", "Líder Espiritual / Filósofo"],
+        "talent": "Catálise de transformação — você muda ambientes só por estar presente neles.",
+        "evolution": ["Desenvolva consistência e disciplina como contrabalança à visão", "Aprenda a distinguir influência de manipulação", "Construa sistemas que funcionem sem você", "Cultive humildade epistêmica"],
+        "compatible": ["O Criador", "O Explorador", "O Visionário"],
+        "traits": {"Liderança": 79, "Criatividade": 92, "Inteligência Estratégica": 83, "Influência Social": 95, "Coragem": 81, "Adaptabilidade": 88},
+        "color": "#8e44ad",
+    },
+    "O Criador": {
+        "symbol": "✶",
+        "rarity": 8.4,
+        "tagline": "A imaginação que materializa o que ainda não existe",
+        "description": "Você é compelido a criar — não como hobby, mas como necessidade existencial. Há em você uma urgência de dar forma ao que existe apenas como visão. Sua mente opera em conexões inesperadas e produções originais que desconcertam e encantam simultaneamente.",
+        "shadow": "O perfeccionismo paralisante e a dificuldade de finalizar projetos são seus sabotadores. Você pode ter dezenas de criações pela metade. A crítica externa atinge você profundamente, muitas vezes bloqueando a expressão.",
+        "financial": "Perfil criativo-inconsistente. Você tem potencial para criar valor imensurável, mas tende a negligenciar a monetização do que cria. Associação com perfis mais estratégicos (Governante, Sábio) pode multiplicar seus resultados financeiros.",
+        "love": "Você precisa de liberdade para criar e de um parceiro que sustente essa liberdade. Compatível com O Cuidador e O Mago. Tende a amar profundamente, mas de forma muitas vezes caótica.",
+        "career": ["Artista / Designer", "Arquiteto / Urbanista", "Escritor / Roteirista", "Fundador de Produto", "Diretor Criativo"],
+        "talent": "Visão estética e criação de mundos — você não apenas resolve problemas, você os transforma em obras.",
+        "evolution": ["Estabeleça rituais de finalização", "Monetize uma criação por vez, antes de começar a próxima", "Separe o valor da obra do julgamento externo", "Colabore com perfis estruturados"],
+        "compatible": ["O Mago", "O Visionário", "O Explorador"],
+        "traits": {"Liderança": 55, "Criatividade": 98, "Inteligência Estratégica": 63, "Influência Social": 74, "Coragem": 68, "Adaptabilidade": 82},
+        "color": "#1abc9c",
+    },
+    "O Explorador": {
+        "symbol": "◉",
+        "rarity": 10.2,
+        "tagline": "Liberdade, fronteiras e a busca pelo que ainda não foi vivido",
+        "description": "Você é atraído pelo desconhecido com uma força gravitacional que não consegue explicar completamente. Fronteiras existem para ser cruzadas, limites para ser testados, territórios para ser desbravados. Sua identidade é construída pela experiência acumulada, não por títulos ou posses.",
+        "shadow": "O compromisso é o seu maior desafio. Você pode evitar relacionamentos, carreiras e projetos profundos por medo de perder a liberdade. A inquietude crônica pode impedir a construção de algo verdadeiramente sólido.",
+        "financial": "Perfil diversificado-nômade. Você tende a experimentar muitos veículos financeiros sem aprofundar em nenhum. Potencial enorme se canalizar a energia exploratória para investimentos temáticos ou negócios de estilo de vida.",
+        "love": "Você precisa de um parceiro que seja também uma aventura. Compatível com O Rebelde e O Criador. Evita relacionamentos que sente como gaiolas.",
+        "career": ["Jornalista / Correspondente", "Viajante Profissional / Nômade Digital", "Fotógrafo / Documentarista", "Consultor Internacional", "Antropólogo / Etnógrafo"],
+        "talent": "Síntese de experiências diversas — você conecta mundos que nunca se encontrariam sem você.",
+        "evolution": ["Escolha uma área e aprofunde-se por pelo menos 2 anos", "Transforme suas experiências em conteúdo ou produto monetizável", "Pratique o comprometimento como forma de liberdade", "Construa uma base antes de partir para a próxima aventura"],
+        "compatible": ["O Criador", "O Rebelde", "O Sábio"],
+        "traits": {"Liderança": 62, "Criatividade": 85, "Inteligência Estratégica": 69, "Influência Social": 76, "Coragem": 88, "Adaptabilidade": 97},
+        "color": "#27ae60",
+    },
+    "O Rebelde": {
+        "symbol": "⊗",
+        "rarity": 6.8,
+        "tagline": "O catalisador que quebra o que precisa ser quebrado",
+        "description": "Você possui uma radar altamente calibrado para hipocrisia, convenção e estruturas que existem apenas para perpetuar a si mesmas. Sua missão não é destruição — é libertação. Você carrega a visão de um mundo diferente do que foi herdado, e essa visão te move com uma energia que desconcerta.",
+        "shadow": "A raiva como identidade e a oposição pelo hábito são seus maiores riscos. Você pode se tornar tão definido pelo que rejeita que perde de vista o que constrói. A desconfiança excessiva pode isolar aliados genuínos.",
+        "financial": "Perfil anti-establishment. Você tende a preferir ativos alternativos, criptomoedas, negócios fora do mainstream. Alta tolerância ao risco não convencional. Risco: ceticismo excessivo do sistema formal pode afastar oportunidades reguladas.",
+        "love": "Você precisa de um parceiro que respeite sua não-conformidade sem precisar ser salvo por ela. Compatível com O Explorador e O Mago. Cuidado com o padrão de seduzir e então resistir à intimidade.",
+        "career": ["Ativista / Líder de Movimento", "Empreendedor Disruptivo", "Artista Provocador", "Hacker / Pesquisador de Segurança", "Jornalista Investigativo"],
+        "talent": "Disrupção criativa — você vê as falhas nos sistemas que todos fingem que funcionam.",
+        "evolution": ["Canalize a energia rebelde em construção, não apenas desconstrução", "Aprenda a usar as regras do sistema para mudá-lo por dentro", "Construa alianças com pessoas que compartilham sua visão", "Desenvolva resiliência emocional para sustentar movimentos longos"],
+        "compatible": ["O Explorador", "O Herói", "O Visionário"],
+        "traits": {"Liderança": 73, "Criatividade": 88, "Inteligência Estratégica": 71, "Influência Social": 82, "Coragem": 94, "Adaptabilidade": 79},
+        "color": "#e74c3c",
+    },
+    "O Amante": {
+        "symbol": "◈",
+        "rarity": 11.5,
+        "tagline": "A intensidade que transforma conexão em arte",
+        "description": "Você experimenta o mundo com uma intensidade sensorial e emocional que a maioria das pessoas nunca experimenta. Beleza, conexão, prazer e profundidade emocional são suas bússolas. Você não apenas vive — você saboreia. Cada experiência passa por um filtro de significado que poucos possuem.",
+        "shadow": "A dependência emocional e o medo da perda são suas sombras. Você pode se perder em relacionamentos a ponto de perder a si mesmo. A sensibilidade extrema pode se tornar vulnerabilidade se não for temperada por limites.",
+        "financial": "Perfil hedônico-relacional. Você tende a gastar em experiências e em pessoas que ama. Construção de riqueza pode ser desafiadora por priorizar presente em detrimento de futuro. Parceria com perfis mais estruturados é fundamental.",
+        "love": "Você é o arquétipo mais profundamente relacional. Compatível com O Herói (proteção) e O Governante (estabilidade). Você transforma qualquer relacionamento em uma experiência única.",
+        "career": ["Artista / Músico", "Terapeuta / Conselheiro", "Chef / Sommelier", "Designer de Experiências", "Relações Públicas / Brand Builder"],
+        "talent": "Criação de vínculos transformadores — as pessoas que você toca nunca mais são as mesmas.",
+        "evolution": ["Desenvolva uma identidade independente de relacionamentos", "Aprenda a amar com limites — não apesar deles", "Canalize a intensidade emocional em criação artística", "Construa reservas financeiras como forma de cuidado próprio"],
+        "compatible": ["O Criador", "O Sábio", "O Cuidador"],
+        "traits": {"Liderança": 48, "Criatividade": 91, "Inteligência Estratégica": 57, "Influência Social": 93, "Coragem": 61, "Adaptabilidade": 86},
+        "color": "#e91e8c",
+    },
+    "O Cuidador": {
+        "symbol": "✿",
+        "rarity": 12.3,
+        "tagline": "A força silenciosa que sustenta o que importa",
+        "description": "Você possui uma capacidade extraordinária de sentir o que o outro precisa — muitas vezes antes que a própria pessoa saiba. Sua presença cria segurança. As pessoas ao seu redor crescem, não por acaso, mas porque você cria o solo fértil para isso. Você é uma força multiplicadora invisível.",
+        "shadow": "A auto-negligência e o martírio são seus sabotadores. Você pode passar a vida inteira cuidando de todos e esquecendo de si mesmo. A dificuldade de receber cuidado e de estabelecer limites pode criar ressentimento acumulado.",
+        "financial": "Perfil conservador-generoso. Você tende a gastar mais com outros do que consigo mesmo. Risco de decisões financeiras movidas por culpa ou obrigação. Potencial enorme de acumulação se aprender a priorizar a própria estabilidade primeiro.",
+        "love": "Você é o parceiro mais sustentador e presente. Compatível com O Herói (que precisa de apoio) e O Rebelde (que precisa de ancoragem). Precisa de um parceiro que também saiba cuidar.",
+        "career": ["Médico / Enfermeiro", "Psicólogo / Assistente Social", "Professor", "RH / Desenvolvimento Humano", "Líder Comunitário"],
+        "talent": "Criação de ambientes de crescimento — você transforma grupos em comunidades e equipes em famílias.",
+        "evolution": ["Pratique dizer não como ato de amor", "Invista em si mesmo com a mesma generosidade que investe nos outros", "Identifique a diferença entre cuidar e controlar", "Receba ajuda — é um ato de coragem, não de fraqueza"],
+        "compatible": ["O Governante", "O Herói", "O Amante"],
+        "traits": {"Liderança": 61, "Criatividade": 67, "Inteligência Estratégica": 64, "Influência Social": 88, "Coragem": 55, "Adaptabilidade": 83},
+        "color": "#3498db",
+    },
+    "O Inocente": {
+        "symbol": "○",
+        "rarity": 13.7,
+        "tagline": "A fé que move montanhas e enxerga beleza onde outros não veem",
+        "description": "Você possui uma qualidade rara no mundo contemporâneo: a capacidade de manter esperança genuína. Você acredita que as coisas podem ser melhores — e essa crença não é ingenuidade, é uma forma de inteligência adaptativa. Sua visão de mundo cria realidades mais positivas ao redor de você.",
+        "shadow": "A negação da sombra e o choque com a realidade são seus maiores riscos. Você pode evitar conflitos necessários e aceitar situações nocivas por querer acreditar no melhor. A decepção pode ser devastadora quando a realidade contradiz sua visão.",
+        "financial": "Perfil otimista-inconsistente. Você tende a acreditar que vai dar certo sem fazer o planejamento necessário. Risco de ser explorado em transações financeiras. Enorme potencial quando combina otimismo com assessoria estruturada.",
+        "love": "Você oferece amor incondicional — o mais raro de todos. Compatível com O Mago (que despertará sua profundidade) e O Governante (que proverá estabilidade). Cuidado com idealização de parceiros.",
+        "career": ["Educador / Pedagogo", "Voluntário / Ativista Social", "Animador / Entretenimento Infantil", "Comunicador / Jornalista Positivo", "Empreendedor Social"],
+        "talent": "Inspiração autêntica — sua presença faz as pessoas acreditarem em si mesmas novamente.",
+        "evolution": ["Desenvolva visão realista sem perder o otimismo", "Aprenda a identificar e nomear dinâmicas nocivas", "Construa limites como proteção da sua luz interior", "Combine fé com plano de ação concreto"],
+        "compatible": ["O Cuidador", "O Sábio", "O Criador"],
+        "traits": {"Liderança": 43, "Criatividade": 72, "Inteligência Estratégica": 52, "Influência Social": 81, "Coragem": 49, "Adaptabilidade": 91},
+        "color": "#f39c12",
+    },
+    "O Fora da Lei": {
+        "symbol": "⊕",
+        "rarity": 3.9,
+        "tagline": "A força que redefine o jogo quando as regras não servem mais",
+        "description": "Você não apenas quebra regras — você as reescreve. Há em você uma inteligência de sobrevivência altamente calibrada que reconhece o que funciona e o que é mera aparência de funcionar. Você opera nas margens porque sabe que é lá onde a realidade não disfarçada reside.",
+        "shadow": "A autossabotagem e a dificuldade com autoridade são seus riscos centrais. Você pode sabotar oportunidades genuínas por suspeita habitual. A lealdade excessiva a um código pessoal pode fechar portas que precisariam ser abertas.",
+        "financial": "Perfil não convencional-estratégico. Você tende a criar riqueza de formas que outros não considerariam. Alto potencial de ganhos assimétricos. Risco de perda total por subestimar consequências sistêmicas de ações fora do padrão.",
+        "love": "Você é intenso, magnético e desafiador. Compatível com O Rebelde e O Mago. Tende a testar parceiros continuamente — o que pode ser enriquecedor ou exaustivo.",
+        "career": ["Empreendedor Serial", "Advogado Criminalista", "Negociador Internacional", "Agente de Inteligência", "Estrategista Político"],
+        "talent": "Navegação em ambiguidade — você funciona melhor onde as regras são fluidas e o improviso é necessário.",
+        "evolution": ["Canalize a energia anticonvencional em sistemas que você mesmo constrói", "Desenvolva confiança seletiva em vez de desconfiança universal", "Crie um código pessoal que alinhe liberdade e responsabilidade", "Construa legado — não apenas conquistas individuais"],
+        "compatible": ["O Rebelde", "O Explorador", "O Mago"],
+        "traits": {"Liderança": 76, "Criatividade": 82, "Inteligência Estratégica": 87, "Influência Social": 79, "Coragem": 93, "Adaptabilidade": 91},
+        "color": "#e67e22",
+    },
+    "O Visionário": {
+        "symbol": "⋆",
+        "rarity": 2.8,
+        "tagline": "Aquele que vive no futuro e volta para contar",
+        "description": "Você possui o perfil mais raro desta análise. Seu processamento temporal é fundamentalmente diferente — enquanto a maioria vive no presente ou no passado, você habita o futuro. Você não planeja o que pode acontecer, você percebe o que inevitavelmente acontecerá e age a partir dessa percepção.",
+        "shadow": "O isolamento e a impaciência com o presente são suas sombras mais profundas. Você pode se tornar tão focado no que será que se desconecta do que é — e das pessoas que habitam o presente ao seu redor.",
+        "financial": "Perfil visionário-antecipador. Você tende a identificar tendências muito antes do mainstream. Risco de entrada prematura em ciclos. Quando a execução acompanha a visão, potencial de retornos excepcionais.",
+        "love": "Você precisa de um parceiro que confie em você mesmo sem ver o que você vê. Compatível com O Cuidador (ancoragem no presente) e O Sábio (compreensão intelectual da visão).",
+        "career": ["Futurista / Consultor de Tendências", "Fundador de Tecnologia", "Cientista / Pesquisador de Fronteira", "Investidor Anjo", "Diretor de Inovação"],
+        "talent": "Percepção de futuros emergentes — você não prevê tendências, você as percebe antes que existam.",
+        "evolution": ["Desenvolva paciência como competência estratégica", "Construa pontes entre sua visão e a realidade atual das pessoas", "Documente sua visão sistematicamente — ela tem valor imenso", "Cerque-se de executores que transformem visão em realidade"],
+        "compatible": ["O Mago", "O Criador", "O Sábio"],
+        "traits": {"Liderança": 84, "Criatividade": 95, "Inteligência Estratégica": 92, "Influência Social": 79, "Coragem": 86, "Adaptabilidade": 83},
+        "color": "#16a085",
+    },
+}
+
+# ─────────────────────────────────────────────
+#  QUESTIONS
+# ─────────────────────────────────────────────
+QUESTIONS = [
     {
-        "q": "1. Em uma mesa de negociação de fusão e aquisição (M&A) complexa, qual variável captura sua atenção imediata?",
-        "opts": {
-            "A assimetria de dados e lacunas de informação técnica nos balanços apresentados.": "O Sábio",
-            "A dinâmica de poder invisível e o nível de vulnerabilidade psicológica dos negociadores opostos.": "O Mago",
-            "A oportunidade de expansão agressiva de market share e esmagamento da concorrência residual.": "O Herói",
-            "As garantias de conformidade, blindagem patrimonial e centralização do controle institucional.": "O Governante"
-        }
+        "text": "Quando você precisa tomar uma decisão importante com pouca informação disponível, qual é sua reação mais honesta?",
+        "options": [
+            ("Busco mais dados antes de qualquer movimento — decisões sem base são imprudentes.", {"O Sábio": 3, "O Governante": 2}),
+            ("Confio no meu instinto. O momento certo pede ação, não análise infinita.", {"O Herói": 3, "O Rebelde": 2}),
+            ("Imagino o cenário daqui a 10 anos e trabalho de trás pra frente.", {"O Visionário": 3, "O Mago": 2}),
+            ("Converso com pessoas de confiança — decisões coletivas são mais robustas.", {"O Cuidador": 3, "O Amante": 2}),
+        ],
     },
     {
-        "q": "2. Diante de um crash sistêmico repentino de mercado que ameaça o caixa da sua organização, qual sua primeira ação?",
-        "opts": {
-            "Isolar-se em ambiente de simulação para calcular cenários de estresse de dados e volatilidade.": "O Sábio",
-            "Assumir publicamente o comando da crise, centralizando decisões e emitindo ordens verticais rígidas.": "O Governante",
-            "Pivotar instantaneamente o modelo de negócios para uma tese de fronteira tecnológica ainda não regulada.": "O Visionário",
-            "Proteger os ativos humanos, blindando a equipe contra o pânico emocional coletivo.": "O Cuidador"
-        }
+        "text": "Como você descreveria sua relação com poder e autoridade?",
+        "options": [
+            ("Quero ocupar posições de liderança — é onde posso causar maior impacto.", {"O Governante": 3, "O Herói": 2}),
+            ("Prefiro influenciar do que comandar — poder formal me interessa pouco.", {"O Mago": 3, "O Visionário": 2}),
+            ("Resisto naturalmente a hierarquias que não me parecem legítimas.", {"O Rebelde": 3, "O Fora da Lei": 2}),
+            ("Tenho poder quando sei de algo que os outros não sabem.", {"O Sábio": 3, "O Criador": 2}),
+        ],
     },
     {
-        "q": "3. Qual o seu principal motivador intrínseco ao assinar um cheque de investimento de alto valor?",
-        "opts": {
-            "A validação empírica de uma tese lógica que você estruturou meticulosamente.": "O Sábio",
-            "O potencial de disrupção radical de uma indústria obsoleta comandada por dinossauros.": "O Rebelde",
-            "O ganho estético de pertencer a um ecossistema exclusivo, sofisticado e de altíssimo padrão.": "O Amante",
-            "A consolidação e perenidade do seu legado e controle patrimonial intergeracional.": "O Governante"
-        }
+        "text": "Em um projeto colaborativo, qual papel você naturalmente assume?",
+        "options": [
+            ("O estrategista — defino a direção e os critérios de sucesso.", {"O Sábio": 3, "O Governante": 2}),
+            ("O executor — prefiro fazer do que planejar.", {"O Herói": 3, "O Explorador": 2}),
+            ("O criativo — gero ideias que ninguém estava considerando.", {"O Criador": 3, "O Mago": 2}),
+            ("O conector — facilito a relação entre as pessoas e os talentos.", {"O Cuidador": 3, "O Amante": 2}),
+        ],
     },
     {
-        "q": "4. Como você gerencia o seu tempo e foco cognitivo quando está sob stress crônico de entrega?",
-        "opts": {
-            "Racionalizo integralmente a pressão, convertendo emoções em blocos de execução fria e metodológica.": "O Sábio",
-            "Aumento a carga horária de trabalho de forma brutal, decidindo carregar a operação inteira nas costas.": "O Herói",
-            "Uso o humor ácido, a ironia estratégica e a subversão para quebrar a tensão da sala.": "O Sábio", # Mapeia sutilmente
-            "Fecho-me em um casulo criativo para desenhar soluções visuais ou de produto fora da caixa.": "O Criador"
-        }
+        "text": "Quando você pensa no dinheiro, qual pensamento surge de forma mais espontânea?",
+        "options": [
+            ("É um instrumento de liberdade — quanto mais, mais opções tenho.", {"O Explorador": 3, "O Fora da Lei": 2}),
+            ("É um indicador de valor entregue — consequência natural do trabalho bem feito.", {"O Herói": 3, "O Governante": 2}),
+            ("É um recurso para criar e impactar — não é um fim em si mesmo.", {"O Criador": 3, "O Visionário": 2}),
+            ("É um meio de cuidar de quem amo — minha segurança vem de sentir que outros estão bem.", {"O Cuidador": 3, "O Inocente": 2}),
+        ],
     },
     {
-        "q": "5. O que mais drena sua energia vital em uma interação social de negócios corporativos?",
-        "opts": {
-            "Diálogos rasos, 'small talk' burocrático e evidente falta de substância intelectual.": "O Sábio",
-            "Processos excessivamente lentos, hierarquias engessadas e formalidades desnecessárias.": "O Explorador",
-            "Ver a incompetência operacional e a falta de visão estratégica destruírem valor em tempo real.": "O Governante",
-            "A ausência crônica de integridade moral e transparência nas intenções dos envolvidos.": "O Inocente"
-        }
+        "text": "Qual afirmação descreve melhor como você processa emoções difíceis?",
+        "options": [
+            ("Analiso racionalmente o que causou a emoção e desenvolvo um plano de resposta.", {"O Sábio": 3, "O Governante": 2}),
+            ("Uso a tensão emocional como combustível para ação e superação.", {"O Herói": 3, "O Rebelde": 2}),
+            ("Mergulho na emoção — sinto profundamente antes de processar.", {"O Amante": 3, "O Cuidador": 2}),
+            ("Transformo a experiência em algo criativo, artístico ou simbólico.", {"O Criador": 3, "O Mago": 2}),
+        ],
     },
     {
-        "q": "6. Ao projetar a estrutura ideal para a sua residência principal ou escritório executivo, qual o norte absoluto?",
-        "opts": {
-            "Funcionalidade minimalista extrema, silêncio absoluto e isolamento para focar em estudos e análises.": "O Sábio",
-            "Suntuosidade, imponência espacial e arquitetura que comunique autoridade imediata aos visitantes.": "O Governante",
-            "Um ecossistema fluido, mutável, integrado com a natureza e adaptável para viagens repentinas.": "O Explorador",
-            "Design proprietário disruptivo, cheio de obras de arte provocativas e assinaturas autorais únicas.": "O Criador"
-        }
+        "text": "O que é mais perturbador para você em um ambiente profissional?",
+        "options": [
+            ("Falta de lógica e decisões arbitrárias sem embasamento.", {"O Sábio": 3, "O Governante": 2}),
+            ("Mediocridade aceita como padrão e falta de ambição coletiva.", {"O Herói": 3, "O Visionário": 2}),
+            ("Burocracia que sufoca criatividade e impossibilita inovação.", {"O Criador": 3, "O Rebelde": 2}),
+            ("Frieza nas relações e falta de cuidado com as pessoas.", {"O Cuidador": 3, "O Amante": 2}),
+        ],
     },
     {
-        "q": "7. Qual a sua postura em relação ao cumprimento de marcos contratuais rígidos e compliance tradicional?",
-        "opts": {
-            "Cumpro com precisão matemática, pois vejo as regras como o alicerce lógico estável da sociedade.": "O Sábio",
-            "Contorno-as sutilmente através de engenharia tributária ou brechas regulatórias legítimas para ganho de velocidade.": "O Fora da Lei",
-            "Quebro-as abertamente caso verifique que a regra protege um monopólio ineficiente ou obsoleto.": "O Rebelde",
-            "Audito todas as linhas com foco em preservar a integridade ética e o nome limpo da instituição.": "O Inocente"
-        }
+        "text": "Como você tipicamente reage diante de uma regra que considera injusta ou ineficiente?",
+        "options": [
+            ("Documento evidências e apresento uma proposta de mudança estruturada.", {"O Sábio": 3, "O Governante": 2}),
+            ("Ignoro silenciosamente e faço do meu jeito — o resultado justifica.", {"O Fora da Lei": 3, "O Herói": 2}),
+            ("Confronto abertamente — aceitar o inaceitável não é uma opção.", {"O Rebelde": 3, "O Herói": 2}),
+            ("Busco alternativas criativas que resolvam o problema real por trás da regra.", {"O Mago": 3, "O Criador": 2}),
+        ],
     },
     {
-        "q": "8. Em um relacionamento amoroso de longo prazo, qual o pilar inegociável para você?",
-        "opts": {
-            "Profundidade de diálogo macroeconômico, filosófico e respeito absoluto pela solitude cognitiva mútua.": "O Sábio",
-            "Lealdade institucional irrepreensível e apoio mútuo na construção de um império patrimonial familiar.": "O Governante",
-            "Intensidade passional, refinamento estético contínuo e experiências sensoriais de alto padrão.": "O Amante",
-            "Liberdade mútua total de locomoção e ausência completa de cobranças ou dinâmicas de aprisionamento.": "O Explorador"
-        }
+        "text": "Qual é a sua visão mais honesta sobre relacionamentos íntimos?",
+        "options": [
+            ("São parcerias estratégicas — admiração mútua e metas compartilhadas são essenciais.", {"O Governante": 3, "O Sábio": 2}),
+            ("São aventuras — preciso de alguém que também queira explorar e crescer.", {"O Explorador": 3, "O Rebelde": 2}),
+            ("São minha fonte mais profunda de sentido — conexão é tudo.", {"O Amante": 3, "O Cuidador": 2}),
+            ("São laboratórios de transformação — crescemos juntos ou não há sentido.", {"O Mago": 3, "O Visionário": 2}),
+        ],
     },
     {
-        "q": "9. Qual o seu mecanismo padrão de autodefesa psicológica quando atacado injustamente por concorrentes?",
-        "opts": {
-            "Aniquilar o argumento do opositor exibindo fatos, métricas frias e dados históricos inquestionáveis.": "O Sábio",
-            "Esmagar a reputação e a operação do concorrente por meio de uma contraofensiva de execução massiva.": "O Herói",
-            "Neutralizar a agressão desarmando o oponente com ironia cirúrgica e exposição pública do ridículo dele.": "O Mago",
-            "Ignorar solenemente o ataque, mantendo o foco exclusivo na execução da sua visão de longo prazo.": "O Visionário"
-        }
+        "text": "O que as pessoas ao seu redor mais frequentemente dizem sobre você?",
+        "options": [
+            ("Que sou confiável, organizado e que entregas o que prometo.", {"O Governante": 3, "O Herói": 2}),
+            ("Que sou intenso, profundo e que minha presença marca.", {"O Mago": 3, "O Amante": 2}),
+            ("Que tenho ideias fora do comum e uma visão que impressiona.", {"O Visionário": 3, "O Criador": 2}),
+            ("Que faço as pessoas se sentirem vistas, ouvidas e cuidadas.", {"O Cuidador": 3, "O Inocente": 2}),
+        ],
     },
     {
-        "q": "10. Diante de um erro metodológico grave cometido por um liderado direto, qual sua atitude?",
-        "opts": {
-            "Analisar didaticamente a falha de processo na planilha de causa e efeito para que o erro se torne aprendizado.": "O Sábio",
-            "Assumir a responsabilidade final perante o conselho, corrigindo o erro pessoalmente durante a madrugada.": "O Herói",
-            "Afastar ou substituir o indivíduo imediatamente para preservar a estabilidade e a disciplina do ecossistema.": "O Governante",
-            "Acolher o liderado, blindando-o contra a ansiedade corporativa antes de recalibrar a operação.": "O Cuidador"
-        }
+        "text": "Quando você imagina seu legado daqui a 30 anos, o que mais importa para você?",
+        "options": [
+            ("Uma obra — algo que criei e que existe independentemente de mim.", {"O Criador": 3, "O Mago": 2}),
+            ("Um sistema — uma organização, método ou estrutura que continua funcionando.", {"O Governante": 3, "O Sábio": 2}),
+            ("Pessoas que transformei — indivíduos cuja vida foi diferente por conta do meu impacto.", {"O Cuidador": 3, "O Herói": 2}),
+            ("Uma ideia — um pensamento que mudou a forma como o mundo entende algo.", {"O Visionário": 3, "O Rebelde": 2}),
+        ],
     },
     {
-        "q": "11. O conceito filosófico de 'Legado' significa, fundamentalmente, para você:",
-        "opts": {
-            "Uma tese científica, patente ou modelo mental disruptivo que altere o curso do conhecimento humano.": "O Sábio",
-            "Estruturas imobiliárias, holdings patrimoniais e empresas perenes que protejam sua linhagem por séculos.": "O Governante",
-            "Ter inspirado uma geração de insurgentes a quebrar as amarras mentais de sistemas ultrapassados.": "O Rebelde",
-            "Ter criado um ecossistema ou produto icônico que redefiniu o padrão estético e cultural da sua era.": "O Criador"
-        }
+        "text": "Qual tipo de risco você está mais disposto a assumir?",
+        "options": [
+            ("Risco calculado com análise profunda de downside e upside.", {"O Sábio": 3, "O Governante": 2}),
+            ("Risco físico ou competitivo — o desafio em si é o atrativo.", {"O Herói": 3, "O Explorador": 2}),
+            ("Risco criativo — compartilhar algo genuinamente meu com o mundo.", {"O Criador": 3, "O Amante": 2}),
+            ("Risco sistêmico — desafiar estruturas estabelecidas por princípio.", {"O Rebelde": 3, "O Fora da Lei": 2}),
+        ],
     },
     {
-        "q": "12. Como você define o papel estratégico do dinheiro em sua jornada existencial?",
-        "opts": {
-            "A métrica fria e objetiva que valida a eficiência lógica das minhas equações de negócios.": "O Sábio",
-            "O instrumento supremo de poder, governança e controle de variáveis macroeconômicas.": "O Governante",
-            "O oxigênio e passaporte de liquidez que financia minha total autonomia de movimentação geográfica.": "O Explorador",
-            "A infraestrutura de capital necessária para financiar o desenvolvimento de produtos revolucionários.": "O Criador"
-        }
+        "text": "Como você aprende melhor e mais profundamente?",
+        "options": [
+            ("Estudo sistemático, leitura densa, construção de frameworks mentais.", {"O Sábio": 3, "O Visionário": 2}),
+            ("Experimentação direta — errando, ajustando e tentando novamente.", {"O Herói": 3, "O Explorador": 2}),
+            ("Pela relação com outras pessoas — conversas profundas e observação humana.", {"O Amante": 3, "O Cuidador": 2}),
+            ("Pela imersão em experiências radicalmente diferentes.", {"O Explorador": 3, "O Rebelde": 2}),
+        ],
     },
     {
-        "q": "13. Diante de uma mudança drástica de diretriz estratégica imposta pelo conselho que colide com seus valores:",
-        "opts": {
-            "Apresento um relatório técnico provando matematicamente a inviabilidade empírica da nova diretriz.": "O Sábio",
-            "Arquiteto uma manobra política de bastidores para neutralizar os conselheiros dissidentes e manter o poder.": "O Mago",
-            "Compro a briga em praça pública, abrindo mão do cargo se necessário para não me submeter à mediocridade.": "O Rebelde",
-            "Tento mediar pacificamente as partes, buscando um ponto de equilíbrio ético estável.": "O Inocente"
-        }
+        "text": "Qual cenário te provoca maior satisfação interior?",
+        "options": [
+            ("Resolver um problema complexo que outros desistiram de resolver.", {"O Sábio": 3, "O Herói": 2}),
+            ("Criar algo do zero que não existia antes e ver funcionar.", {"O Criador": 3, "O Mago": 2}),
+            ("Perceber que alguém cresceu ou foi transformado pela sua influência.", {"O Cuidador": 3, "O Mago": 2}),
+            ("Superar um limite que você mesmo achava que não conseguiria superar.", {"O Herói": 3, "O Rebelde": 2}),
+        ],
     },
     {
-        "q": "14. Quando você avalia uma nova tecnologia ou startup disruptiva para investimento precoce (Early Stage):",
-        "opts": {
-            "Audito as linhas de código, unit economics e tração real com ceticismo metodológico severo.": "O Sábio",
-            "Busco entender se o fundador possui a energia indomável de um executor capaz de furar paredes de concreto.": "O Herói",
-            "Avalio se o produto possui um design proprietário icônico capaz de gerar um efeito de culto na base de clientes.": "O Criador",
-            "Ignoro os números atuais e foco em mapear se a tese estará no epicentro do mundo daqui a uma década.": "O Visionário"
-        }
+        "text": "Sua relação com solidão é melhor descrita como:",
+        "options": [
+            ("Solidão é combustível — é quando meu melhor trabalho acontece.", {"O Sábio": 3, "O Criador": 2}),
+            ("Tolero bem, mas preciso de missões — solidão sem propósito é angústia.", {"O Herói": 3, "O Governante": 2}),
+            ("Sinto falta das pessoas rapidamente — conecto-me melhor em relação.", {"O Amante": 3, "O Cuidador": 2}),
+            ("É liberdade — o espaço onde posso ser completamente eu mesmo.", {"O Explorador": 3, "O Fora da Lei": 2}),
+        ],
     },
     {
-        "q": "15. Qual o seu principal superpoder comportamental reconhecido por seus pares de alto escalão?",
-        "opts": {
-            "Manter a mente cirurgicamente fria e analítica enquanto todos estão em colapso emocional na sala.": "O Sábio",
-            "A capacidade de forçar resultados operacionais impossíveis através da pura imposição de ritmo e foco.": "O Herói",
-            "O magnetismo verbal absoluto de traduzir conceitos complexos em visões comerciais irresistíveis.": "O Mago",
-            "A competência milimétrica de estruturar processos replicáveis e sistemas de poder altamente lucrativos.": "O Governante"
-        }
+        "text": "Como você lida com o fracasso?",
+        "options": [
+            ("Analiso o que deu errado com frieza e extraio aprendizados sistemáticos.", {"O Sábio": 3, "O Governante": 2}),
+            ("Levanto mais rápido — o fracasso é uma informação, não uma identidade.", {"O Herói": 3, "O Explorador": 2}),
+            ("Sinto profundamente, processo emocionalmente e então sigo.", {"O Amante": 3, "O Inocente": 2}),
+            ("Vejo como confirmação de que o sistema precisa ser questionado.", {"O Rebelde": 3, "O Fora da Lei": 2}),
+        ],
     },
     {
-        "q": "16. Se você recebesse um prêmio global de máxima distinção em sua área, sua reação íntima seria:",
-        "opts": {
-            "Avaliar se o critério do comitê de premiação foi metodologicamente isento e rigoroso.": "O Sábio",
-            "Utilizar o selo do prêmio imediatamente para aumentar o valuation da minha holding e expandir mercado.": "O Governante",
-            "Sentir um tédio sutil e planejar a próxima expedição ou quebra de recorde para não estagnar no troféu.": "O Explorador",
-            "Comemorar em um banquete restrito com experiências gastronômicas exclusivas e alta estética.": "O Amante"
-        }
+        "text": "Em situações de conflito, qual é sua resposta mais natural?",
+        "options": [
+            ("Busco a posição racionalmente correta e a defendo com lógica.", {"O Sábio": 3, "O Governante": 2}),
+            ("Confronto diretamente — evitar conflito não resolve, apenas adia.", {"O Herói": 3, "O Rebelde": 2}),
+            ("Busco mediação e entendimento do ponto de vista do outro.", {"O Cuidador": 3, "O Amante": 2}),
+            ("Uso o conflito como oportunidade de reposicionamento estratégico.", {"O Fora da Lei": 3, "O Mago": 2}),
+        ],
     },
     {
-        "q": "17. Como você aborda a estruturação da sua rotina diária de alta performance?",
-        "opts": {
-            "Blocos matemáticos fixos baseados em cronobiologia, ingestão de dados e otimização cognitiva severa.": "O Sábio",
-            "Agenda agressiva focada em vitórias comerciais consecutivas e eliminação de distrações operacionais.": "O Herói",
-            "Flexibilidade absoluta: rejeito agendas pré-fixadas para manter o canal intuitivo e criativo aberto 24/7.": "O Criador",
-            "Ritualística refinada que prioriza o bem-estar físico, meditação estratégica e ambientes harmoniosos.": "O Inocente"
-        }
+        "text": "O que te impede de agir mais frequentemente do que gostaria?",
+        "options": [
+            ("A necessidade de mais informação — quero ter certeza antes de me comprometer.", {"O Sábio": 3, "O Governante": 2}),
+            ("O medo do julgamento — o que vão pensar sobre minha criação ou posição.", {"O Criador": 3, "O Inocente": 2}),
+            ("A resistência interna ao comprometimento — quero manter opções abertas.", {"O Explorador": 3, "O Rebelde": 2}),
+            ("Honestamente? Quase nada. Quando vejo o momento, eu ajo.", {"O Herói": 3, "O Fora da Lei": 2}),
+        ],
     },
     {
-        "q": "18. Qual falha de caráter é absolutamente imperdoável em seu ecossistema profissional?",
-        "opts": {
-            "A preguiça mental, desinformação e repetição de erros por falta de estudo ou análise lógica.": "O Sábio",
-            "A covardia diante do risco e a incapacidade de assumir a responsabilidade pelos próprios resultados.": "O Herói",
-            "A traição política desleal que quebra a cadeia de comando institucional estabelecida.": "O Governante",
-            "A manipulação maliciosa de terceiros com o único intuito de sugar valor sem entregar substância.": "O Fora da Lei"
-        }
+        "text": "Qual dessas habilidades você desenvolveria primeiro se pudesse escolher?",
+        "options": [
+            ("Pensamento sistêmico avançado e capacidade analítica profunda.", {"O Sábio": 3, "O Visionário": 2}),
+            ("Liderança inspiracional e capacidade de mobilizar pessoas.", {"O Herói": 3, "O Governante": 2}),
+            ("Expressão criativa e habilidades artísticas de nível profissional.", {"O Criador": 3, "O Amante": 2}),
+            ("Visão estratégica de longo prazo e capacidade antecipatória.", {"O Visionário": 3, "O Mago": 2}),
+        ],
     },
     {
-        "q": "19. Ao ler um livro de alta densidade ou um relatório geopolítico, você busca, primordialmente:",
-        "opts": {
-            "A absorção de dados brutos e modelos conceituais estruturados para refinar suas tomadas de decisão.": "O Sábio",
-            "A validação de insights e tendências macroeconômicas de longo prazo para antecipar mercados.": "O Visionário",
-            "Táticas e estratégias históricas de guerra e poder aplicáveis à sua atual disputa de mercado.": "O Governante",
-            "Estímulos e referências conceituais para alimentar o pipeline de design dos seus produtos.": "O Criador"
-        }
+        "text": "Qual é a sua relação com convenções sociais e expectativas externas?",
+        "options": [
+            ("As sigo quando fazem sentido — são contratos sociais úteis.", {"O Governante": 3, "O Sábio": 2}),
+            ("As questiono sempre — muitas convenções existem para perpetuar estruturas inadequadas.", {"O Rebelde": 3, "O Fora da Lei": 2}),
+            ("As adapto criativamente — uso as formas existentes para criar algo novo.", {"O Criador": 3, "O Mago": 2}),
+            ("Sigo o que me parece genuíno — convenções que não refletem quem sou me sufocam.", {"O Explorador": 3, "O Amante": 2}),
+        ],
     },
     {
-        "q": "20. Em sua visão mais profunda e despida de vaidades, qual o propósito final da existência?",
-        "opts": {
-            "Decodificar os mistérios lógicos do universo, saindo do plano terreno com maior nível de sabedoria factual.": "O Sábio",
-            "Vencer batalhas complexas, deixando a marca da sua força e superação gravada na história comercial.": "O Herói",
-            "Arquitetar a ordem, prosperidade estável e segurança sistêmica para as futuras gerações da sua linhagem.": "O Governante",
-            "Viver uma jornada de experiências intensas, belas, autênticas e totalmente livres de amarras institucionais.": "O Explorador"
-        }
-    }
+        "text": "O que é integridade para você, na prática?",
+        "options": [
+            ("Consistência entre valores declarados e ações — fazer o que diz.", {"O Governante": 3, "O Herói": 2}),
+            ("Honestidade radical, mesmo quando desconfortável.", {"O Rebelde": 3, "O Sábio": 2}),
+            ("Presença e cuidado genuíno com as pessoas ao meu redor.", {"O Cuidador": 3, "O Amante": 2}),
+            ("Fidelidade à minha visão, mesmo contra a pressão do ambiente.", {"O Visionário": 3, "O Criador": 2}),
+        ],
+    },
+    {
+        "text": "Em que tipo de ambiente você performa melhor?",
+        "options": [
+            ("Ambientes estruturados com clareza de objetivos e recursos adequados.", {"O Governante": 3, "O Sábio": 2}),
+            ("Alta pressão, desafios crescentes e entregas de alto impacto.", {"O Herói": 3, "O Fora da Lei": 2}),
+            ("Espaços criativos sem limites rígidos de formato ou processo.", {"O Criador": 3, "O Explorador": 2}),
+            ("Contextos relacionais onde o trabalho é essencialmente humano.", {"O Cuidador": 3, "O Amante": 2}),
+        ],
+    },
+    {
+        "text": "Qual é o seu maior driver de motivação no trabalho?",
+        "options": [
+            ("Autonomia e liberdade para fazer do meu jeito.", {"O Explorador": 3, "O Criador": 2}),
+            ("Impacto mensurável — saber que o que faço realmente muda algo.", {"O Herói": 3, "O Governante": 2}),
+            ("Maestria — ser reconhecidamente excelente no que escolhi.", {"O Sábio": 3, "O Herói": 2}),
+            ("Propósito — sentir que o trabalho está alinhado com algo maior.", {"O Visionário": 3, "O Mago": 2}),
+        ],
+    },
+    {
+        "text": "Como você age quando percebe que alguém próximo está passando por dificuldades?",
+        "options": [
+            ("Ofereço análise e soluções concretas — ajudo de forma prática.", {"O Sábio": 2, "O Governante": 2}),
+            ("Fico presente, escuto profundamente e ofereço suporte emocional.", {"O Cuidador": 3, "O Amante": 2}),
+            ("Inspiro a pessoa a ver o problema de uma perspectiva diferente.", {"O Mago": 3, "O Visionário": 2}),
+            ("Mobilizo recursos e ação — problemas pedem soluções, não apenas empatia.", {"O Herói": 3, "O Governante": 2}),
+        ],
+    },
+    {
+        "text": "Qual é a sua relação com o status quo e com mudança?",
+        "options": [
+            ("Mudo o que precisa ser mudado com base em evidência, não em impulso.", {"O Sábio": 3, "O Governante": 2}),
+            ("A mudança é meu elemento natural — estagnação me sufoca.", {"O Explorador": 3, "O Rebelde": 2}),
+            ("Questiono o que existe não por maldade, mas por ver claramente o que poderia ser.", {"O Visionário": 3, "O Criador": 2}),
+            ("Mudo quando o que existe deixa de servir às pessoas — esse é o critério.", {"O Cuidador": 3, "O Mago": 2}),
+        ],
+    },
+    {
+        "text": "Qual é o seu maior medo genuíno?",
+        "options": [
+            ("Ser irrelevante — não deixar nenhuma marca real no mundo.", {"O Herói": 3, "O Governante": 2}),
+            ("Ser incompreendido — ter uma visão que ninguém consegue enxergar.", {"O Visionário": 3, "O Criador": 2}),
+            ("Perder vínculos importantes — ficar sem as conexões que me definem.", {"O Amante": 3, "O Cuidador": 2}),
+            ("Ser controlado — perder a liberdade de agir de acordo com minha própria lógica.", {"O Rebelde": 3, "O Fora da Lei": 2}),
+        ],
+    },
 ]
 
-# ==============================================================================
-# 3. GESTÃO DE ESTADO DO FUNIL (SESSION STATE MOTOR)
-# ==============================================================================
-if 'funnel_stage' not in st.session_state:
-    st.session_state.funnel_stage = 'cover'
-if 'user_metadata' not in st.session_state:
-    st.session_state.user_metadata = {}
-if 'current_q_index' not in st.session_state:
-    st.session_state.current_q_index = 0
-if 'psychometric_scores' not in st.session_state:
-    st.session_state.psychometric_scores = {k: 0 for k in archetypes_data.keys()}
-if 'computed_results' not in st.session_state:
-    st.session_state.computed_results = {}
 
-def advance_to(stage_name):
-    st.session_state.funnel_stage = stage_name
+# ─────────────────────────────────────────────
+#  SESSION STATE INIT
+# ─────────────────────────────────────────────
+def init_state():
+    defaults = {
+        "screen": "cover",
+        "name": "",
+        "age": "",
+        "gender": "",
+        "answers": {},
+        "scores": {},
+        "primary": None,
+        "secondary": None,
+        "shadow": None,
+        "paid": False,
+        "potential_index": 0,
+        "rarity_pct": 0.0,
+        "current_q": 0,
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+init_state()
+
+
+# ─────────────────────────────────────────────
+#  HELPERS
+# ─────────────────────────────────────────────
+def gold(text, size="1rem", weight=400):
+    return f'<span style="color:#d4af37;font-size:{size};font-weight:{weight};">{text}</span>'
+
+def dim(text, size="0.82rem"):
+    return f'<span style="color:#7d8590;font-size:{size};">{text}</span>'
+
+def eyebrow(text):
+    return f'<div class="section-eyebrow">{text}</div>'
+
+def divider():
+    st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
+
+def glass(content_html):
+    st.markdown(f'<div class="glass-card">{content_html}</div>', unsafe_allow_html=True)
+
+def go_to(screen):
+    st.session_state["screen"] = screen
     st.rerun()
 
-# ==============================================================================
-# 4. ENGENHARIA DE CÁLCULO PSICOMÉTRICO E GERADORES DE MÍDIA
-# ==============================================================================
-def process_final_metrics():
-    scores = st.session_state.psychometric_scores
-    # Adiciona sutil ruído determinístico para evitar empates absolutos e garantir precisão matemática
-    for key in scores:
-        scores[key] += random.uniform(0.001, 0.009)
-    
-    sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    primary_arch = sorted_scores[0][0]
-    secondary_arch = sorted_scores[1][0]
-    
-    # Se o secundário for igual ao principal por algum motivo de inicialização, seleciona o terceiro
-    if secondary_arch == primary_arch:
-        secondary_arch = sorted_scores[2][0]
-        
-    st.session_state.computed_results = {
-        "primary": primary_arch,
-        "secondary": secondary_arch,
-        "global_index": random.randint(92, 99),
-        "exact_match": round(random.uniform(89.4, 97.8), 1)
-    }
 
-def draw_executive_radar(arch_name):
-    metrics_val = archetypes_data[arch_name]["radar"]
-    dimensions = [
-        'Liderança', 'Criatividade', 'Inteligência Estratégica', 
-        'Influência Social', 'Coragem', 'Adaptabilidade'
-    ]
-    
-    # Fechar o círculo no gráfico Plotly
-    metrics_val_closed = metrics_val + [metrics_val[0]]
-    dimensions_closed = dimensions + [dimensions[0]]
-    
+# ─────────────────────────────────────────────
+#  SCORE ENGINE
+# ─────────────────────────────────────────────
+def compute_scores():
+    scores = {k: 0 for k in ARCHETYPES}
+    for q_idx, choice_idx in st.session_state["answers"].items():
+        q = QUESTIONS[q_idx]
+        _, weights = q["options"][choice_idx]
+        for arch, pts in weights.items():
+            if arch in scores:
+                scores[arch] += pts
+
+    # Add small randomisation for personality diversity
+    for k in scores:
+        scores[k] += random.uniform(0, 1.5)
+
+    sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+    st.session_state["scores"] = scores
+    st.session_state["primary"] = sorted_scores[0][0]
+    st.session_state["secondary"] = sorted_scores[1][0]
+    # Shadow = weakest archetype
+    st.session_state["shadow"] = sorted_scores[-1][0]
+
+    p_arch = ARCHETYPES[sorted_scores[0][0]]
+    base = (sorted_scores[0][1] / (len(QUESTIONS) * 3)) * 100
+    idx = min(98, max(62, int(base * 0.6 + sum(p_arch["traits"].values()) / 6 * 0.4)))
+    st.session_state["potential_index"] = idx
+    st.session_state["rarity_pct"] = ARCHETYPES[st.session_state["primary"]]["rarity"]
+
+
+# ─────────────────────────────────────────────
+#  RADAR CHART
+# ─────────────────────────────────────────────
+def make_radar(traits: dict, color: str = "#d4af37", title: str = ""):
+    cats = list(traits.keys())
+    vals = list(traits.values())
+    cats_closed = cats + [cats[0]]
+    vals_closed = vals + [vals[0]]
+
     fig = go.Figure()
     fig.add_trace(go.Scatterpolar(
-        r=metrics_val_closed,
-        theta=dimensions_closed,
+        r=vals_closed,
+        theta=cats_closed,
         fill='toself',
-        fillcolor='rgba(212, 175, 55, 0.15)',
-        line=dict(color='#d4af37', width=2),
-        marker=dict(color='#ffffff', size=6),
-        name=arch_name
+        fillcolor=color.replace(")", ",0.15)").replace("rgb", "rgba") if "rgb" in color else color + "26",
+        line=dict(color=color, width=2),
+        marker=dict(color=color, size=5),
+        name="Perfil",
     ))
-    
     fig.update_layout(
         polar=dict(
             radialaxis=dict(
-                visible=True, 
-                range=[0, 100], 
-                color='#8b949e', 
-                gridcolor='rgba(255, 255, 255, 0.05)',
-                linecolor='rgba(255, 255, 255, 0.1)'
+                visible=True,
+                range=[0, 100],
+                tickfont=dict(color="#7d8590", size=9),
+                gridcolor="#21262d",
+                linecolor="#21262d",
             ),
             angularaxis=dict(
-                color='#d4af37', 
-                gridcolor='rgba(255, 255, 255, 0.05)',
-                linecolor='rgba(255, 255, 255, 0.1)'
+                tickfont=dict(color="#c9ced8", size=10, family="Space Grotesk"),
+                gridcolor="#21262d",
+                linecolor="#21262d",
             ),
-            bgcolor='rgba(13, 17, 23, 0.5)'
+            bgcolor="#0d1117",
         ),
+        paper_bgcolor="#0d1117",
+        plot_bgcolor="#0d1117",
         showlegend=False,
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(color='#f0f3f6', size=11),
-        margin=dict(t=25, b=25, l=40, r=40),
-        height=320
+        title=dict(text=title, font=dict(color="#d4af37", size=12, family="Space Grotesk"), x=0.5) if title else None,
+        margin=dict(l=30, r=30, t=30 if not title else 50, b=30),
+        height=340,
     )
     return fig
 
-def build_pdf_dossier():
-    name = st.session_state.user_metadata.get('nome', 'EXEQUENTE').upper()
-    age = st.session_state.user_metadata.get('idade', 'N/A')
-    primary = st.session_state.computed_results['primary']
-    secondary = st.session_state.computed_results['secondary']
-    res_data = archetypes_data[primary]
-    sec_data = archetypes_data[secondary]
-    current_date = datetime.now().strftime("%d/%m/%Y")
-    serial_num = f"ADX-{random.randint(100000, 999999)}-{age}"
 
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-
-    def set_luxury_bg():
-        pdf.set_fill_color(13, 17, 23)
-        pdf.rect(0, 0, 210, 297, 'F')
-        # Borda Dourada sutil
-        pdf.set_draw_color(212, 175, 55)
-        pdf.set_linewidth(0.3)
-        pdf.rect(5, 5, 200, 287)
-
-    def write_premium_header(title_text):
-        pdf.set_font("Times", 'B', 10)
-        pdf.set_text_color(212, 175, 55)
-        pdf.cell(0, 10, txt=f"AURADEX ARQUÉTIPOS SUPREMO | DOCUMENTO DE INTELIGÊNCIA COMPORTAMENTAL", ln=1, align='C')
-        pdf.set_draw_color(212, 175, 55)
-        pdf.line(10, 18, 200, 18)
-        pdf.ln(8)
-        pdf.set_font("Times", 'B', 16)
-        pdf.set_text_color(212, 175, 55)
-        pdf.cell(0, 10, txt=title_text.upper(), ln=1, align='L')
-        pdf.ln(4)
-
-    def write_premium_footer(page_num):
-        pdf.set_draw_color(212, 175, 55)
-        pdf.line(10, 280, 200, 280)
-        pdf.set_y(281)
-        pdf.set_font("Arial", 'I', 8)
-        pdf.set_text_color(139, 148, 158)
-        pdf.cell(100, 10, txt=f"ID: {serial_num} | ALTAMENTE CONFIDENCIAL", align='L')
-        pdf.cell(90, 10, txt=f"Página {page_num} de 10", align='R')
-
-    def safe_text(txt):
-        return txt.encode('latin-1', 'replace').decode('latin-1')
-
-    # PAGE 1: CAPA PREMIUM DE LUXO
-    pdf.add_page()
-    set_luxury_bg()
-    pdf.ln(40)
-    pdf.set_font("Times", 'B', 28)
-    pdf.set_text_color(212, 175, 55)
-    pdf.cell(0, 15, txt="DOSSIÊ ARQUÉTIPO SUPREMO", ln=1, align='C')
-    pdf.set_font("Arial", 'I', 12)
-    pdf.set_text_color(139, 148, 158)
-    pdf.cell(0, 10, txt="Relatório Analítico de Alta Performance Comportamental", ln=1, align='C')
-    
-    pdf.ln(50)
-    pdf.set_draw_color(212, 175, 55)
-    pdf.line(40, 120, 170, 120)
-    
-    pdf.ln(15)
-    pdf.set_font("Times", 'B', 14)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 10, txt=f"AVALIADO: {safe_text(name)}", ln=1, align='C')
-    pdf.set_font("Arial", '', 11)
-    pdf.set_text_color(200, 200, 200)
-    pdf.cell(0, 8, txt=f"Classe Etária Calibrada: {age} Anos", ln=1, align='C')
-    pdf.cell(0, 8, txt=f"Métrica de Raridade do Perfil: {res_data['rarity']}", ln=1, align='C')
-    
-    pdf.ln(60)
-    pdf.set_font("Courier", 'B', 10)
-    pdf.set_text_color(212, 175, 55)
-    pdf.cell(0, 6, txt=f"SÉRIE: {serial_num}", ln=1, align='C')
-    pdf.cell(0, 6, txt=f"DATA DE EMISSÃO DA MATRIZ: {current_date}", ln=1, align='C')
-    write_premium_footer(1)
-
-    # PAGE 2: ÍNDICE GERAL & SUMÁRIO EXECUTIVO
-    pdf.add_page()
-    set_luxury_bg()
-    write_premium_header("Sumário Executivo e Matriz de Conteúdo")
-    pdf.set_font("Arial", '', 11)
-    pdf.set_text_color(220, 224, 230)
-    summary_intro = (
-        "Este dossiê técnico foi compilado utilizando algoritmos avançados de ponderação psicométrica, "
-        "mapeando vetores de tomada de decisão, tolerância ao estresse e padrões arquetípicos latentes. "
-        "As seções a seguir constituem uma radiografia cognitiva inestimável para o desenvolvimento de liderança de alto padrão."
+def make_gauge(value: int, color: str = "#d4af37"):
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=value,
+        domain={"x": [0, 1], "y": [0, 1]},
+        number={"font": {"color": color, "size": 42, "family": "Cormorant Garamond"}, "suffix": ""},
+        gauge={
+            "axis": {"range": [0, 100], "tickwidth": 0, "tickcolor": "#21262d", "tickfont": {"color": "#7d8590", "size": 9}},
+            "bar": {"color": color, "thickness": 0.25},
+            "bgcolor": "#161b22",
+            "borderwidth": 0,
+            "steps": [
+                {"range": [0, 33], "color": "#161b22"},
+                {"range": [33, 66], "color": "#1a1f2e"},
+                {"range": [66, 100], "color": "#21262d"},
+            ],
+            "threshold": {"line": {"color": color, "width": 3}, "thickness": 0.8, "value": value},
+        },
+    ))
+    fig.update_layout(
+        paper_bgcolor="#0d1117",
+        plot_bgcolor="#0d1117",
+        height=220,
+        margin=dict(l=20, r=20, t=10, b=10),
+        font=dict(color="#f0f1f3"),
     )
-    pdf.multi_cell(0, 6, txt=safe_text(summary_intro))
-    pdf.ln(15)
-    
-    # Tabela estruturada do Índice
-    sections = [
-        ("Seção 1: Arquétipo Dominante e Assinatura Comportamental", "Pág. 3"),
-        ("Seção 2: Arquétipo Secundário - A Força Propulsora Oculta", "Pág. 4"),
-        ("Seção 3: Mapeamento do Arquétipo Sombra e Pontos Cegos", "Pág. 5"),
-        ("Seção 4: Vetor de Inteligência e Alocação Financeira", "Pág. 6"),
-        ("Seção 5: Afinidade e Sinergia Relacional Amorosa", "Pág. 7"),
-        ("Seção 6: Ecossistemas Profissionais e Zonas de Excelência", "Pág. 8"),
-        ("Seção 7: Ativação do Talento Oculto e Plano de Evolução", "Pág. 9"),
-        ("Seção 8: Certificado Oficial de Conclusão de Diagnóstico", "Pág. 10"),
-    ]
-    
-    pdf.set_font("Times", 'B', 12)
-    pdf.set_text_color(212, 175, 55)
-    pdf.cell(0, 10, txt="ESTRUTURA METODOLÓGICA:", ln=1)
-    pdf.ln(4)
-    
-    pdf.set_font("Arial", '', 10)
-    pdf.set_text_color(200, 200, 200)
-    for sec_title, sec_pag in sections:
-        pdf.cell(160, 8, txt=safe_text(sec_title), border='B')
-        pdf.cell(30, 8, txt=sec_pag, border='B', ln=1, align='R')
-        pdf.ln(2)
-    write_premium_footer(2)
+    return fig
 
-    # PAGE 3: ARQUÉTIPO PRINCIPAL
-    pdf.add_page()
-    set_luxury_bg()
-    write_premium_header("Seção 1: Arquétipo Dominante")
-    pdf.set_font("Times", 'B', 20)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 12, txt=safe_text(f"MATRIZ: {primary.upper()}"), ln=1, align='L')
-    pdf.ln(6)
-    pdf.set_font("Arial", '', 11)
-    pdf.set_text_color(220, 224, 230)
-    pdf.multi_cell(0, 6, txt=safe_text(res_data['desc']))
-    pdf.ln(10)
-    
-    # Caixa de Destaque Estatístico
-    pdf.set_fill_color(22, 27, 34)
-    pdf.rect(10, 120, 190, 35, 'F')
-    pdf.set_xy(15, 123)
-    pdf.set_font("Times", 'B', 12)
-    pdf.set_text_color(212, 175, 55)
-    pdf.cell(0, 6, txt="MÉTRICAS PSICOMÉTRICAS DA MATRIZ DOMINANTE:", ln=1)
-    pdf.set_font("Arial", '', 10)
-    pdf.set_text_color(200, 200, 200)
-    pdf.set_xy(15, 132)
-    pdf.cell(0, 6, txt=f"- Índice Global de Potencialidade Cognitiva: {st.session_state.computed_results['global_index']}/100", ln=1)
-    pdf.set_xy(15, 138)
-    pdf.cell(0, 6, txt=f"- Nível de Alinhamento Neural com o Perfil: {st.session_state.computed_results['exact_match']}%", ln=1)
-    pdf.set_xy(15, 144)
-    pdf.cell(0, 6, txt=f"- Frequência Estatística Populacional: {res_data['rarity']}", ln=1)
-    write_premium_footer(3)
 
-    # PAGE 4: ARQUÉTIPO SECUNDÁRIO
-    pdf.add_page()
-    set_luxury_bg()
-    write_premium_header("Seção 2: Arquétipo Secundário Oculto")
-    pdf.set_font("Times", 'B', 18)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 12, txt=safe_text(f"CO-PROTAGONISTA COMPORTAMENTAL: {secondary.upper()}"), ln=1, align='L')
-    pdf.ln(6)
-    pdf.set_font("Arial", '', 11)
-    pdf.set_text_color(220, 224, 230)
-    sec_intro_text = (
-        f"Seu comportamento não é unidimensional. A análise detectou uma intersecção profunda "
-        f"com a matriz de '{secondary}'. Este arquétipo atua como uma força de retaguarda tática, "
-        f"ditando suas reações automáticas em ambientes sob estresse moderado."
-    )
-    pdf.multi_cell(0, 6, txt=safe_text(sec_intro_text))
-    pdf.ln(10)
-    pdf.set_font("Arial", 'I', 11)
-    pdf.set_text_color(212, 175, 55)
-    pdf.multi_cell(0, 6, txt=safe_text(f"Impacto na Operação Dinâmica: {res_data['sec_desc']}"))
-    write_premium_footer(4)
-
-    # PAGE 5: ARQUÉTIPO SOMBRA
-    pdf.add_page()
-    set_luxury_bg()
-    write_premium_header("Seção 3: Diagnóstico Psicológico da Sombra")
-    pdf.set_font("Arial", '', 11)
-    pdf.set_text_color(220, 224, 230)
-    sombra_intro = (
-        "A sombra representa a antítese do ego arquetípico consciente. É o reservatório mecânico de seus sabotadores internos, "
-        "ativados de forma reflexa quando seus recursos energéticos ou emocionais atingem níveis críticos de depleção."
-    )
-    pdf.multi_cell(0, 6, txt=safe_text(sombra_intro))
-    pdf.ln(12)
-    
-    pdf.set_fill_color(40, 20, 20)
-    pdf.rect(10, 65, 190, 45, 'F')
-    pdf.set_xy(15, 69)
-    pdf.set_font("Times", 'B', 13)
-    pdf.set_text_color(255, 100, 100)
-    pdf.cell(0, 6, txt="SABOTADOR ARQUETÍPICO IDENTIFICADO:", ln=1)
-    pdf.set_font("Arial", '', 11)
-    pdf.set_text_color(240, 220, 220)
-    pdf.set_xy(15, 78)
-    pdf.multi_cell(180, 6, txt=safe_text(res_data['sombra']))
-    write_premium_footer(5)
-
-    # PAGE 6: VETOR FINANCEIRO
-    pdf.add_page()
-    set_luxury_bg()
-    write_premium_header("Seção 4: Perfil Analítico e Inteligência Financeira")
-    pdf.set_font("Arial", '', 11)
-    pdf.set_text_color(220, 224, 230)
-    pdf.multi_cell(0, 6, txt=safe_text(res_data['financeiro']))
-    pdf.ln(15)
-    
-    # Renderizar uma tabela de Alocação Ótima Recomendada simulada por engenharia arquetípica
-    pdf.set_font("Times", 'B', 12)
-    pdf.set_text_color(212, 175, 55)
-    pdf.cell(0, 8, txt="MATRIZ DE RISCO E ALOCAÇÃO PATRIMONIAL RECOMENDADA:", ln=1)
-    pdf.ln(4)
-    
-    pdf.set_font("Arial", 'B', 10)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(95, 8, txt="Classe de Ativo Estratégico", border=1)
-    pdf.cell(95, 8, txt="Ponderação de Carteira Recomendada", border=1, ln=1, align='R')
-    
-    pdf.set_font("Arial", '', 10)
-    pdf.set_text_color(200, 200, 200)
-    allocations = [
-        ("Ativos de Escala Máxima (Ações/Equity/Empreendimentos)", "45%"),
-        ("Blindagem de Capital Real (Imóveis/Holdings/Títulos Soberanos)", "35%"),
-        ("Assimetrias de Fronteira (Opções/Tech Inovação/Criptoativos)", "15%"),
-        ("Reserva de Liquidez Tática Imediata (Caixa Operacional)", "5%"),
-    ]
-    for asset, weight in allocations:
-        pdf.cell(95, 8, txt=safe_text(asset), border=1)
-        pdf.cell(95, 8, txt=weight, border=1, ln=1, align='R')
-    write_premium_footer(6)
-
-    # PAGE 7: MAPEAMENTO AMOROSO
-    pdf.add_page()
-    set_luxury_bg()
-    write_premium_header("Seção 5: Inteligência Relacional e Afinidade Amorosa")
-    pdf.set_font("Arial", '', 11)
-    pdf.set_text_color(220, 224, 230)
-    pdf.multi_cell(0, 6, txt=safe_text(res_data['amoroso']))
-    pdf.ln(10)
-    pdf.multi_cell(0, 6, txt=safe_text(f"Dinâmica de Matriz Interpessoal: {res_data['compat_matrix']}"))
-    write_premium_footer(7)
-
-    # PAGE 8: ECOSSISTEMAS PROFISSIONAIS
-    pdf.add_page()
-    set_luxury_bg()
-    write_premium_header("Seção 6: Ecossistemas Profissionais e Liderança")
-    pdf.set_font("Arial", '', 11)
-    pdf.set_text_color(220, 224, 230)
-    pdf.multi_cell(0, 6, txt=safe_text(f"As suas competências intrínsecas atingem o pico de produtividade de mercado em ambientes que exigem alta performance institucional. Suas principais rotas corporativas de aceleração de valor são: {res_data['carreira']}"))
-    write_premium_footer(8)
-
-    # PAGE 9: PLANO DE EVOLUÇÃO E TALENTO OCULTO
-    pdf.add_page()
-    set_luxury_bg()
-    write_premium_header("Seção 7: Ativação do Potencial Oculto")
-    pdf.set_font("Times", 'B', 13)
-    pdf.set_text_color(212, 175, 55)
-    pdf.cell(0, 8, txt=safe_text(f"TALENTO ADORMECIDO DETECTADO:"), ln=1)
-    pdf.set_font("Arial", '', 11)
-    pdf.set_text_color(220, 224, 230)
-    pdf.multi_cell(0, 6, txt=safe_text(res_data['talento_oculto']))
-    pdf.ln(10)
-    
-    pdf.set_font("Times", 'B', 13)
-    pdf.set_text_color(212, 175, 55)
-    pdf.cell(0, 8, txt="PLANO ESTRATÉGICO DE EVOLUÇÃO (3 PASSOS):", ln=1)
-    pdf.ln(2)
-    pdf.set_font("Arial", '', 11)
-    pdf.set_text_color(200, 200, 200)
-    for idx, step in enumerate(res_data['plano_evolucao']):
-        pdf.multi_cell(0, 6, txt=safe_text(f"{idx+1}. {step}"))
-        pdf.ln(2)
-    write_premium_footer(9)
-
-    # PAGE 10: CERTIFICADO FINAL DE CONCLUSÃO
-    pdf.add_page()
-    set_luxury_bg()
-    
-    # Moldura Dupla Especial para o Certificado
-    pdf.set_draw_color(212, 175, 55)
-    pdf.set_linewidth(1)
-    pdf.rect(10, 10, 190, 277)
-    pdf.rect(12, 12, 186, 273)
-    
-    pdf.set_xy(20, 40)
-    pdf.set_font("Times", 'B', 24)
-    pdf.set_text_color(212, 175, 55)
-    pdf.cell(170, 15, txt="CERTIFICADO DE DIAGNÓSTICO", ln=1, align='C')
-    pdf.set_font("Arial", '', 11)
-    pdf.set_text_color(200, 200, 200)
-    pdf.cell(170, 10, txt="SISTEMA EXECUTIVO DE INTELIGÊNCIA COMPORTAMENTAL", ln=1, align='C')
-    
-    pdf.ln(40)
-    pdf.set_font("Arial", '', 12)
-    cert_body = (
-        f"Certifica-se para todos os fins de governança pessoal e corporativa que o indivíduo "
-        f"registrado sob o nome de {name} concluiu com sucesso a totalidade das avaliações psicométricas "
-        f"da plataforma AuraDex Supremo, sendo atestada sua assinatura arquetípica dominante na classe de "
-        f"'{primary.upper()}', com grau de assertividade estatística de {st.session_state.computed_results['exact_match']}%."
-    )
-    pdf.set_xy(25, 100)
-    pdf.multi_cell(160, 7, txt=safe_text(cert_body), align='C')
-    
-    pdf.ln(50)
-    pdf.set_font("Times", 'I', 14)
-    pdf.set_text_color(212, 175, 55)
-    pdf.cell(170, 10, txt=f'"{res_data["frase"]}"', ln=1, align='C', y=180)
-    
-    # Linhas de Assinatura
-    pdf.set_draw_color(139, 148, 158)
-    pdf.line(40, 230, 95, 230)
-    pdf.line(115, 230, 170, 230)
-    
-    pdf.set_font("Arial", '', 8)
-    pdf.set_text_color(139, 148, 158)
-    pdf.set_xy(40, 232)
-    pdf.cell(55, 5, txt="DIREÇÃO AUDITORIA AURADEX", align='C')
-    pdf.set_xy(115, 232)
-    pdf.cell(55, 5, txt="CHIEF PSYCHOMETRIC OFFICER", align='C')
-    
-    write_premium_footer(10)
-    
-    return pdf.output()
-
-# ==============================================================================
-# 5. RENDERIZADOR DE ESTÁGIOS DO FUNIL (ROTEADOR DE TELAS)
-# ==============================================================================
-
-# STAGE 1: CAPA COM VOLUMETRIA LUXURY E MÉTRICAS
-if st.session_state.funnel_stage == 'cover':
-    st.markdown("""
-        <div style='text-align:center; margin-top:1.5rem;'>
-            <span style='color: #d4af37; font-size: 0.85rem; letter-spacing: 3px; font-weight:bold; text-transform:uppercase;'>SISTEMA DE ALTA INTELIGÊNCIA COMPORTAMENTAL</span>
-        </div>
-    """)
-    st.markdown("<h1>Apenas 4,7% das pessoas possuem um perfil tão raro quanto o seu.</h1>", unsafe_allow_html=True)
-    st.markdown("<div class='luxury-subtitle'>Descubra os padrões ocultos que influenciam milimetricamente suas decisões executivas, gestão de capital, relacionamentos de elite e seu destino.</div>", unsafe_allow_html=True)
-    
-    st.markdown("""
-        <div class="bloomberg-container">
-            <div class="bloomberg-box">
-                <div class="bloomberg-val">25.412</div>
-                <div class="bloomberg-lbl">Perfis Analisados</div>
-            </div>
-            <div class="bloomberg-box">
-                <div class="bloomberg-val">93.4%</div>
-                <div class="bloomberg-lbl">Precisão Psicométrica</div>
-            </div>
-            <div class="bloomberg-box">
-                <div class="bloomberg-val">0.04s</div>
-                <div class="bloomberg-lbl">Latência de Cálculo</div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.write("<br>", unsafe_allow_html=True)
-    if st.button("INICIAR ANÁLISE COMPORTAMENTAL"):
-        advance_to('identification')
-
-# STAGE 2: IDENTIFICAÇÃO DOS METADADOS DO USUÁRIO
-elif st.session_state.funnel_stage == 'identification':
-    st.markdown("<h2>Módulo de Calibragem Biométrica</h2>", unsafe_allow_html=True)
-    st.markdown("<div class='luxury-subtitle'>Forneça os parâmetros de identificação para ajustar os multiplicadores etários do motor analítico.</div>", unsafe_allow_html=True)
-    
-    st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-    with st.form("exec_form"):
-        nome = st.text_input("Seu Nome Completo / Primeiro Nome Executivo", placeholder="Ex: Dr. Roberto / Miguel")
-        idade = st.number_input("Sua Idade Cronológica Atual", min_value=16, max_value=110, step=1, value=30)
-        sexo = st.selectbox("Gênero de Calibragem Linguística", ["Masculino", "Feminino", "Prefiro manter sigilo de dados"])
-        
-        st.write("<br>", unsafe_allow_html=True)
-        submitted = st.form_submit_button("CONECTAR AO MOTOR DE DIAGNÓSTICO")
-        if submitted:
-            if not nome.strip():
-                st.error("Parâmetro mandatório ausente: Por favor, preencha o campo Nome.")
-            else:
-                st.session_state.user_metadata = {
-                    "nome": nome.strip().capitalize(),
-                    "idade": idade,
-                    "sexo": sexo
-                }
-                advance_to('test')
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# STAGE 3: TESTE COMPORTAMENTAL DE ALTA INTENSIDADE COGNITIVA
-elif st.session_state.funnel_stage == 'test':
-    q_idx = st.session_state.current_q_index
-    total_q = len(questions_pool)
-    
-    st.markdown("<h2>Diagnóstico de Perfil em Execução</h2>", unsafe_allow_html=True)
-    
-    # Barra de Progresso Luxuosa Dinâmica
-    prog_val = q_idx / total_q
-    st.progress(prog_val)
-    st.markdown(f"<p style='text-align: right; color:#8b949e; font-size:0.8rem; letter-spacing:1px; margin-top:5px;'>BLOCO ANALÍTICO: {q_idx + 1} / {total_q}</p>", unsafe_allow_html=True)
-    
-    q_data = questions_pool[q_idx]
-    
-    st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-    st.markdown(f"<p style='font-size: 1.2rem; line-height: 1.5; color:#f0f3f6; font-family:Georgia, serif;'>{q_data['q']}</p><br>", unsafe_allow_html=True)
-    
-    # Listagem das alternativas estruturadas
-    opts_dict = q_data['opts']
-    options_list = list(opts_dict.keys())
-    
-    selected_option = st.radio("Selecione o vetor de resposta alinhado com seu instinto tático:", options_list, label_visibility="collapsed")
-    
-    st.write("<br>", unsafe_allow_html=True)
-    if st.button("PROCESSAR VETOR E AVANÇAR"):
-        # Contabiliza pontuação no arquétipo correspondente
-        matched_archetype = opts_dict[selected_option]
-        st.session_state.psychometric_scores[matched_archetype] += 1
-        
-        # Avança o índice das questões
-        if q_idx + 1 < total_q:
-            st.session_state.current_q_index += 1
-            st.rerun()
-        else:
-            advance_to('loading')
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# STAGE 4: PROCESSAMENTO CINEMATOGRÁFICO DE DADOS
-elif st.session_state.funnel_stage == 'loading':
-    st.markdown("<h2>Sintetizando Assinatura Psicométrica...</h2>", unsafe_allow_html=True)
-    
-    progress_bar = st.progress(0)
-    status_msg = st.empty()
-    
-    loading_sequences = [
-        "Mapeando padrões cognitivos estruturais...",
-        "Calculando matriz de perfil emocional sob modeloBig-Five...",
-        "Detectando arquétipos secundários latentes na infraestrutura neural...",
-        "Analisando tendências e vieses de alocação financeira de risco...",
-        "Isolando o ponto cego estrutural (Mapeamento de Arquétipo Sombra)...",
-        "Criptografando Dossiê Executivo e compilando relatório final..."
-    ]
-    
-    for i in range(101):
-        progress_bar.progress(i)
-        seq_idx = min(i // 17, len(loading_sequences) - 1)
-        status_msg.markdown(f"<div class='loading-text'>{loading_sequences[seq_idx]}</div>", unsafe_allow_html=True)
-        time.sleep(0.04) # Sincronia cinematográfica de carregamento
-        
-    process_final_metrics()
-    advance_to('free_result')
-
-# STAGE 5: RESULTADO GRATUITO (GATILHO DE CURIOSIDADE EXTREMA)
-elif st.session_state.funnel_stage == 'free_result':
-    name = st.session_state.user_metadata['nome']
-    primary = st.session_state.computed_results['primary']
-    match_rate = st.session_state.computed_results['exact_match']
-    
-    st.markdown(f"<h2>Diagnóstico Concluído com Sucesso, {name}.</h2>", unsafe_allow_html=True)
-    st.markdown("<div class='luxury-subtitle'>Os servidores AuraDex processaram sua matriz vetorial. Sua assinatura comportamental principal está disponível abaixo.</div>", unsafe_allow_html=True)
-    
-    st.markdown(f"""
-        <div class="glass-card" style="text-align:center; border-left:3px solid #d4af37;">
-            <div class="bloomberg-lbl" style="font-size:1rem; margin-bottom:10px;">Seu Arquétipo Dominante Identificado:</div>
-            <div style="font-size: 3rem; font-family:'Times New Roman', serif; color:#d4af37; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">{primary.upper()}</div>
-            <div style="color: #2ecc71; font-family: monospace; font-size:1.1rem; margin-top:10px;">Assertividade de Parâmetros: {match_rate}% de Match Global</div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown(f"<p style='font-size:1.15rem; line-height:1.7; text-align:justify; color:#e4e6eb;'>{archetypes_data[primary]['desc']}</p>", unsafe_allow_html=True)
-    
-    st.markdown(f"""
-        <div class="ticker-alert">
-            <b>⚠️ ATENÇÃO SINALIZADA PELA IA DE RISCO COGNITIVO:</b><br>
-            Identificamos uma anomalia severa em sua assinatura secundária. Há um <b>Arquétipo Oculto extremamente raro</b> influenciando diretamente suas falhas de alocação financeira e gerando vazamento de energia e sabotagem em seus relacionamentos afetivos de alto nível.
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("""
-        <div class="glass-card" style="border-left: 3px solid #ff4d4d; background: rgba(255,255,255,0.02);">
-            <p style="color:#ff4d4d; font-weight:bold; font-size:1.1rem; margin-bottom:10px;">⚠️ Dados Criptografados Retidos pelo Sistema:</p>
-            <ul style="color:#8b949e; line-height:1.8; font-size:0.95rem; margin-left:-15px;">
-                <li><b>O seu Arquétipo Sombra:</b> o vetor exato causador dos seus momentos de auto-sabotagem patrimonial.</li>
-                <li><b>O Mapa de Inteligência de Alocação Financeira:</b> o seu multiplicador ótimo de patrimônio líquido.</li>
-                <li><b>O Radar Comportamental de 6 Eixos:</b> plotagem matemática do seu perfil executivo comparado ao mercado.</li>
-                <li><b>O Plano Tático de Evolução de 3 Passos:</b> as ações inegociáveis para destravar sua zona de maestria.</li>
-            </ul>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.write("<br>", unsafe_allow_html=True)
-    if st.button("ACESSAR OFERTA DE DESBLOQUEIO DE DOSSIÊ"):
-        advance_to('premium_offer')
-
-# STAGE 6: OFERTA PREMIUM IRRECUSÁVEL (VALOR PERCEBIDO EXTREMO)
-elif st.session_state.funnel_stage == 'premium_offer':
-    st.markdown("<h1>Dossiê Arquétipo Supremo</h1>", unsafe_allow_html=True)
-    st.markdown("<div class='luxury-subtitle'>Acesse o mais robusto e profundo relatório de inteligência comportamental e psicanálise prática disponível no mercado digital contemporâneo.</div>", unsafe_allow_html=True)
-    
-    st.markdown("""
-        <div class="glass-card">
-            <div class="glass-card-title">Escopo Integral do Dossiê Premium (Liberação Imediata)</div>
-            <div style="font-size:1.05rem; line-height:2.2; color:#e4e6eb;">
-                ⚜️ <b>Análise de Profundidade da Matriz Dominante</b> (Tratamento Clínico Corporativo)<br>
-                🧬 <b>Identificação do Arquétipo Secundário Oculto</b> (O co-protagonista mental)<br>
-                🌑 <b>Mapeamento Analítico da Sombra</b> (Neutralização de auto-sabotagem crônica)<br>
-                📊 <b>Plotagem do Radar Comportamental Executivo</b> (Gráfico interativo Plotly)<br>
-                💰 <b>Vetor de Alocação e Inteligência Financeira</b> (Estratégias de proteção de ativos)<br>
-                ❤️ <b>Mapeamento Interpessoal Amoroso</b> (Sinergia premium de relacionamentos)<br>
-                💼 <b>Zonas Profissionais de Máxima Rentabilidade</b> (Aceleração de carreira C-Level)<br>
-                📈 <b>Plano de Evolução Tático de 3 Passos</b> (Diretrizes práticas inegociáveis)<br>
-                📄 <b>Dossiê Completo Exportável em PDF (10 Páginas)</b> contendo Capa e Certificado Oficial.
-            </div>
-            <hr style="border-color: rgba(212,175,55,0.15); margin: 1.5rem 0;">
-            <div style="text-align:center;">
-                <p style="text-decoration: line-through; color:#8b949e; font-size:1.1rem; margin-bottom:4px;">Valor de Avaliação Corporativa Padrão: R$ 97,00</p>
-                <p style="color:#8b949e; font-size:0.9rem; margin-bottom:8px;">Oportunidade Promocional AuraDex Supremo:</p>
-                <div style="font-size: 3rem; color:#2ecc71; font-weight:bold; font-family:'Times New Roman', serif;">R$ 4,90</div>
-                <p style="color:#8b949e; font-size:0.8rem; margin-top:6px;">(Taxa única de processamento de dados. Sem assinaturas subsequentes. Liberação via PIX/Cartão)</p>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    if st.button("💳 EFETUAR DESBLOQUEIO SEGURO E EMISSÃO DE DOSSIÊ"):
-        with st.spinner("Processando transação criptografada segura e gerando matriz analítica..."):
-            time.sleep(2.5) # Simulação realista de transação segura aprovada
-            advance_to('premium_report')
-
-# STAGE 7: RELATÓRIO PREMIUM COMPLETO (DASHBOARD EXECUTIVO INTERATIVO)
-elif st.session_state.funnel_stage == 'premium_report':
-    name = st.session_state.user_metadata['nome']
-    primary = st.session_state.computed_results['primary']
-    secondary = st.session_state.computed_results['secondary']
-    res_data = archetypes_data[primary]
-    sec_data = archetypes_data[secondary]
-    global_index = st.session_state.computed_results['global_index']
-    
-    st.markdown("""
-        <div style='text-align:center; margin-top:1rem;'>
-            <span style='color: #2ecc71; background: rgba(46,204,113,0.1); border:1px solid #2ecc71; padding: 5px 15px; border-radius:30px; font-size: 0.8rem; letter-spacing: 2px; font-weight:bold;'>ACESSO IRRESTRITO LIBERADO</span>
-        </div>
-    """)
-    st.markdown(f"<h1>Dossiê Executivo de Alta Performance: {name}</h1>", unsafe_allow_html=True)
-    st.markdown("<div class='luxury-subtitle'>Plataforma integrada de inteligência arquetípica corporativa. Visualize seus dados métricos abaixo.</div>", unsafe_allow_html=True)
-    
-    # Grid Bloomberg Superior de Indicadores Avançados
-    st.markdown(f"""
-        <div class="bloomberg-container" style="border-color: #d4af37;">
-            <div class="bloomberg-box">
-                <div class="bloomberg-val">{global_index}/100</div>
-                <div class="bloomberg-lbl">Índice Geral Potencial</div>
-            </div>
-            <div class="bloomberg-box">
-                <div class="bloomberg-val">{res_data['rarity']}</div>
-                <div class="bloomberg-lbl">Raridade Populacional</div>
-            </div>
-            <div class="bloomberg-box">
-                <div class="bloomberg-val">SÉRIE-A</div>
-                <div class="bloomberg-lbl">Grau de Estabilidade</div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    col_left, col_right = st.columns([1.2, 1])
-    
-    with col_left:
-        # Bloco do Radar Comportamental interativo Plotly
-        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='glass-card-title'>📊 Radar Comportamental Executivo</div>", unsafe_allow_html=True)
-        fig_radar = draw_executive_radar(primary)
-        st.plotly_chart(fig_radar, use_container_width=True, config={'displayModeBar': False})
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Bloco Financeiro
-        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='glass-card-title'>💰 Inteligência e Alocação Financeira</div>", unsafe_allow_html=True)
-        st.markdown(f"<p style='color:#e4e6eb; line-height:1.6; text-align:justify;'>{res_data['financeiro']}</p>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Bloco Carreiras
-        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='glass-card-title'>💼 Ecossistemas Profissionais Ótimos</div>", unsafe_allow_html=True)
-        st.markdown(f"<p style='color:#e4e6eb; line-height:1.6;'><b>Zonas de Alta Performance Rentável:</b> {res_data['carreira']}</p>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with col_right:
-        # Bloco da Sombra Crítica (Vermelho Tático)
-        st.markdown("<div class='glass-card' style='border-left: 3px solid #ff4d4d; background: rgba(255,77,77,0.02);'>", unsafe_allow_html=True)
-        st.markdown("<div class='glass-card-title' style='color:#ff4d4d;'>🌑 Arquétipo Sombra e Pontos Cegos</div>", unsafe_allow_html=True)
-        st.markdown(f"<p style='color:#f9f9f9; line-height:1.6; text-align:justify;'>{res_data['sombra']}</p>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Bloco do Arquétipo Secundário Oculto
-        st.markdown("<div class='glass-card' style='border-left: 3px solid #3498db; background: rgba(52,152,219,0.02);'>", unsafe_allow_html=True)
-        st.markdown("<div class='glass-card-title' style='color:#3498db;'>🧬 Co-Protagonista Mental</div>", unsafe_allow_html=True)
-        st.markdown(f"<p style='color:#f0f3f6; line-height:1.5; margin-bottom:5px;'><b>{secondary}</b></p>", unsafe_allow_html=True)
-        st.markdown(f"<p style='color:#8b949e; font-size:0.9rem; text-align:justify;'>{res_data['sec_desc']}</p>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Bloco Talento Oculto
-        st.markdown("<div class='glass-card' style='border-left: 3px solid #9b59b6; background: rgba(155,89,182,0.02);'>", unsafe_allow_html=True)
-        st.markdown("<div class='glass-card-title' style='color:#9b59b6;'>✨ Potencial Oculto Adormecido</div>", unsafe_allow_html=True)
-        st.markdown(f"<p style='color:#e4e6eb; line-height:1.6; text-align:justify;'>{res_data['talento_oculto']}</p>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Bloco Amoroso
-        st.markdown("<div class='glass-card' style='border-left: 3px solid #e84393; background: rgba(232,67,147,0.02);'>", unsafe_allow_html=True)
-        st.markdown("<div class='glass-card-title' style='color:#e84393;'>❤️ Afinidade Relacional de Elite</div>", unsafe_allow_html=True)
-        st.markdown(f"<p style='color:#e4e6eb; line-height:1.6; text-align:justify;'>{res_data['amoroso']}</p>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # Bloco de Evolução Tática em Largura Total
-    st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-    st.markdown("<div class='glass-card-title'>📈 Plano de Evolução Tático Operacional</div>", unsafe_allow_html=True)
-    for idx, step in enumerate(res_data['plano_evolucao']):
-        st.markdown(f"<p style='color:#e4e6eb; line-height:1.6;'><b>Passo {idx+1}:</b> {step}</p>", unsafe_allow_html=True)
-    st.markdown(f"<hr style='border-color:rgba(212,175,55,0.15);'><p style='text-align:center; font-family:Times New Roman, serif; font-style:italic; font-size:1.25rem; color:#d4af37; margin-top:15px;'>\"{res_data['frase']}\"</p>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    st.write("<br><hr style='border-color: rgba(255,255,255,0.05);'><br>", unsafe_allow_html=True)
-    
-    # Ações de Saída: Download de PDF de 10 páginas e Compartilhamento de Alta Conversão no WhatsApp
-    col_pdf, col_wpp = st.columns(2)
-    
-    with col_pdf:
-        # Gera o PDF via FPDF de forma imediata em memória
-        pdf_data = build_pdf_dossier()
-        st.download_button(
-            label="⬇️ EXPORTAR DOSSIÊ SUPREMO EM PDF (10 PÁG)",
-            data=pdf_data,
-            file_name=f"Dossie_Supremo_{name}_{primary.replace(' ', '_')}.pdf",
-            mime="application/pdf",
-            use_container_width=True
+# ─────────────────────────────────────────────
+#  PDF GENERATION
+# ─────────────────────────────────────────────
+def generate_pdf_bytes() -> bytes:
+    """Generate a premium PDF report using ReportLab."""
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.platypus import (
+            SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
+            HRFlowable, PageBreak,
         )
-        
-    with col_wpp:
-        whatsapp_copy = f"Acabei de descobrir meu Arquétipo Supremo no AuraDex. Meu perfil é da classe ultra rara '{primary}' (apenas {res_data['rarity']} da população global possui). Faça seu teste de inteligência comportamental agora mesmo."
-        encoded_copy = urllib.parse.quote(whatsapp_copy)
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+        from reportlab.pdfgen import canvas
+        from io import BytesIO
+
+        primary = st.session_state["primary"]
+        secondary = st.session_state["secondary"]
+        shadow = st.session_state["shadow"]
+        arch = ARCHETYPES[primary]
+        arch2 = ARCHETYPES[secondary]
+        arch_s = ARCHETYPES[shadow]
+        name = st.session_state["name"] or "Usuário"
+        idx = st.session_state["potential_index"]
+        rarity = st.session_state["rarity_pct"]
+        now = datetime.now().strftime("%d/%m/%Y")
+
+        GOLD = colors.HexColor("#d4af37")
+        BLACK = colors.HexColor("#0a0c0f")
+        DARK = colors.HexColor("#161b22")
+        GRAY = colors.HexColor("#7d8590")
+        WHITE = colors.HexColor("#f0f1f3")
+        WHITE2 = colors.HexColor("#c9ced8")
+
+        buf = BytesIO()
+        doc = SimpleDocTemplate(
+            buf,
+            pagesize=A4,
+            leftMargin=2*cm, rightMargin=2*cm,
+            topMargin=2*cm, bottomMargin=2*cm,
+            title=f"AuraDex — Dossiê {name}",
+        )
+
+        styles = getSampleStyleSheet()
+
+        def sty(name_s, **kwargs):
+            return ParagraphStyle(name_s, **{"fontName": "Helvetica", "textColor": WHITE, "fontSize": 10, "leading": 16, **kwargs})
+
+        S = {
+            "cover_title": sty("ct", fontName="Helvetica-Bold", fontSize=32, textColor=GOLD, leading=38, alignment=TA_CENTER),
+            "cover_sub": sty("cs", fontSize=13, textColor=WHITE2, leading=20, alignment=TA_CENTER),
+            "eyebrow": sty("ey", fontSize=7, textColor=GOLD, leading=10, fontName="Helvetica-Bold", spaceAfter=4),
+            "h1": sty("h1", fontName="Helvetica-Bold", fontSize=22, textColor=GOLD, leading=28, spaceBefore=12, spaceAfter=6),
+            "h2": sty("h2", fontName="Helvetica-Bold", fontSize=15, textColor=WHITE, leading=20, spaceBefore=10, spaceAfter=5),
+            "body": sty("bd", fontSize=10, textColor=WHITE2, leading=17, spaceAfter=8),
+            "small": sty("sm", fontSize=8, textColor=GRAY, leading=13),
+            "gold_stat": sty("gs", fontName="Helvetica-Bold", fontSize=12, textColor=GOLD, leading=18),
+            "center": sty("cen", fontSize=10, textColor=WHITE2, leading=16, alignment=TA_CENTER),
+            "tag": sty("tg", fontSize=9, textColor=GOLD, leading=14, fontName="Helvetica-Bold"),
+        }
+
+        def hr():
+            return HRFlowable(width="100%", thickness=0.5, color=GOLD, spaceAfter=12, spaceBefore=12)
+
+        def section(label, title):
+            return [
+                Spacer(1, 0.3*cm),
+                Paragraph(label.upper(), S["eyebrow"]),
+                Paragraph(title, S["h1"]),
+                hr(),
+            ]
+
+        story = []
+
+        # ── COVER PAGE ──
+        story += [
+            Spacer(1, 3*cm),
+            Paragraph("◈  AURADEX", sty("logo", fontName="Helvetica-Bold", fontSize=11, textColor=GOLD, alignment=TA_CENTER, letterSpacing=6)),
+            Spacer(1, 0.5*cm),
+            Paragraph("DOSSIÊ ARQUÉTIPO SUPREMO", S["cover_title"]),
+            Spacer(1, 0.4*cm),
+            Paragraph("Relatório de Inteligência Comportamental", S["cover_sub"]),
+            Spacer(1, 2.5*cm),
+        ]
+
+        cover_data = [
+            ["ANALISADO", name],
+            ["ARQUÉTIPO PRINCIPAL", primary],
+            ["ÍNDICE DE POTENCIAL", f"{idx}/100"],
+            ["RARIDADE DO PERFIL", f"Top {rarity}% da população"],
+            ["DATA DO RELATÓRIO", now],
+            ["VERSÃO", "Supremo Premium"],
+        ]
+        cover_table = Table(cover_data, colWidths=[5.5*cm, 10*cm])
+        cover_table.setStyle(TableStyle([
+            ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+            ("FONTNAME", (1, 0), (1, -1), "Helvetica"),
+            ("FONTSIZE", (0, 0), (-1, -1), 10),
+            ("TEXTCOLOR", (0, 0), (0, -1), GOLD),
+            ("TEXTCOLOR", (1, 0), (1, -1), WHITE2),
+            ("BACKGROUND", (0, 0), (-1, -1), DARK),
+            ("ROWBACKGROUNDS", (0, 0), (-1, -1), [DARK, colors.HexColor("#1a1f2e")]),
+            ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#21262d")),
+            ("PADDING", (0, 0), (-1, -1), 9),
+            ("TOPPADDING", (0, 0), (-1, -1), 8),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ]))
+        story += [cover_table, Spacer(1, 3*cm)]
+        story.append(Paragraph("Este relatório é de uso pessoal e exclusivo. Gerado por Inteligência Artificial Comportamental AuraDex.", S["small"]))
+        story.append(PageBreak())
+
+        # ── ÍNDICE ──
+        story += section("Sumário", "Índice do Relatório")
+        index_items = [
+            "1. Índice Geral de Potencial",
+            "2. Arquétipo Principal",
+            "3. Arquétipo Secundário",
+            "4. Arquétipo Sombra",
+            "5. Perfil Financeiro",
+            "6. Perfil Amoroso",
+            "7. Perfil de Carreira",
+            "8. Talento Oculto",
+            "9. Plano de Evolução",
+            "10. Radar Comportamental",
+            "11. Compatibilidades",
+            "12. Certificado de Raridade",
+        ]
+        for item in index_items:
+            story.append(Paragraph(item, S["body"]))
+        story.append(PageBreak())
+
+        # ── POTENCIAL ──
+        story += section("Diagnóstico Geral", "Índice Geral de Potencial")
+        story.append(Paragraph(f"Score: {idx} / 100", sty("sc", fontName="Helvetica-Bold", fontSize=28, textColor=GOLD, alignment=TA_CENTER)))
+        story.append(Spacer(1, 0.3*cm))
+        story.append(Paragraph(
+            f"Este índice representa a síntese de todos os vetores comportamentais identificados na análise de {name}. "
+            "Combina inteligência estratégica, potencial de liderança, criatividade operacional e resiliência adaptativa.",
+            S["body"]
+        ))
+
+        trait_data = [["DIMENSÃO", "ÍNDICE", "NÍVEL"]] + [
+            [k, f"{v}/100", "Alto" if v >= 80 else "Médio" if v >= 60 else "Desenvolvimento"]
+            for k, v in arch["traits"].items()
+        ]
+        trait_table = Table(trait_data, colWidths=[6*cm, 3*cm, 5*cm])
+        trait_table.setStyle(TableStyle([
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTNAME", (0, 1), (-1, -1), "Helvetica"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("TEXTCOLOR", (0, 0), (-1, 0), GOLD),
+            ("TEXTCOLOR", (0, 1), (-1, -1), WHITE2),
+            ("TEXTCOLOR", (1, 1), (1, -1), GOLD),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#21262d")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [DARK, colors.HexColor("#1a1f2e")]),
+            ("GRID", (0, 0), (-1, -1), 0.3, colors.HexColor("#21262d")),
+            ("PADDING", (0, 0), (-1, -1), 8),
+            ("ALIGN", (1, 0), (1, -1), "CENTER"),
+        ]))
+        story += [Spacer(1, 0.5*cm), trait_table, PageBreak()]
+
+        # ── ARQUÉTIPO PRINCIPAL ──
+        story += section("Arquétipo Principal", primary)
+        story.append(Paragraph(arch["symbol"] + "  " + arch["tagline"], S["gold_stat"]))
+        story.append(Spacer(1, 0.3*cm))
+        story.append(Paragraph(arch["description"], S["body"]))
+        story.append(PageBreak())
+
+        # ── SECUNDÁRIO ──
+        story += section("Arquétipo Secundário", secondary)
+        story.append(Paragraph(arch2["symbol"] + "  " + arch2["tagline"], S["gold_stat"]))
+        story.append(Spacer(1, 0.3*cm))
+        story.append(Paragraph(arch2["description"], S["body"]))
+        story.append(PageBreak())
+
+        # ── SOMBRA ──
+        story += section("Arquétipo Sombra", shadow)
+        story.append(Paragraph(
+            "O arquétipo sombra representa os padrões de comportamento reprimidos ou não integrados. "
+            "Conhecer sua sombra é o ato mais avançado de autoconhecimento.", S["body"]
+        ))
+        story.append(Paragraph(arch_s["shadow"], S["body"]))
+        story.append(PageBreak())
+
+        # ── FINANCEIRO ──
+        story += section("Perfil Financeiro", "Inteligência Monetária")
+        story.append(Paragraph(arch["financial"], S["body"]))
+        story.append(PageBreak())
+
+        # ── AMOROSO ──
+        story += section("Perfil Amoroso", "Padrões de Conexão")
+        story.append(Paragraph(arch["love"], S["body"]))
+        story.append(PageBreak())
+
+        # ── CARREIRA ──
+        story += section("Perfil de Carreira", "Vocação e Potencial Profissional")
+        story.append(Paragraph("Carreiras com maior alinhamento arquetípico:", S["body"]))
+        for c in arch["career"]:
+            story.append(Paragraph(f"◆  {c}", S["tag"]))
+        story.append(PageBreak())
+
+        # ── TALENTO OCULTO ──
+        story += section("Talento Oculto", "O Dom Ainda Não Explorado")
+        story.append(Paragraph(arch["talent"], sty("tl", fontName="Helvetica-Bold", fontSize=12, textColor=WHITE, leading=20)))
+        story.append(PageBreak())
+
+        # ── PLANO DE EVOLUÇÃO ──
+        story += section("Plano de Evolução", "Próximos Passos")
+        for i, step in enumerate(arch["evolution"], 1):
+            story.append(Paragraph(f"{i}.  {step}", S["body"]))
+        story.append(PageBreak())
+
+        # ── COMPATIBILIDADES ──
+        story += section("Compatibilidades", "Mapa de Conexões Arquetípicas")
+        story.append(Paragraph("Arquétipos com maior sinergia:", S["body"]))
+        for c in arch["compatible"]:
+            a = ARCHETYPES[c]
+            story.append(Paragraph(f"{a['symbol']}  {c} — {a['tagline']}", S["gold_stat"]))
+            story.append(Spacer(1, 0.15*cm))
+        story.append(PageBreak())
+
+        # ── CERTIFICADO ──
+        story.append(Spacer(1, 2*cm))
+        story.append(Paragraph("◈  AURADEX · CERTIFICADO DE RARIDADE", sty("cert_h", fontName="Helvetica-Bold", fontSize=10, textColor=GOLD, alignment=TA_CENTER, letterSpacing=4)))
+        story.append(Spacer(1, 1*cm))
+        story.append(Paragraph(name, sty("cert_name", fontName="Helvetica-Bold", fontSize=26, textColor=WHITE, alignment=TA_CENTER)))
+        story.append(Spacer(1, 0.5*cm))
+        story.append(Paragraph(
+            f"possui o arquétipo <b>{primary}</b>, identificado em apenas <b>{rarity}%</b> da população analisada.",
+            sty("cert_body", fontSize=11, textColor=WHITE2, alignment=TA_CENTER, leading=20)
+        ))
+        story.append(Spacer(1, 0.5*cm))
+        story.append(Paragraph(f"Índice de Potencial: {idx}/100", sty("cert_idx", fontName="Helvetica-Bold", fontSize=14, textColor=GOLD, alignment=TA_CENTER)))
+        story.append(Spacer(1, 1.5*cm))
+        story.append(Paragraph(f"Emitido em {now} por AuraDex Inteligência Comportamental", S["small"]))
+
+        doc.build(story)
+        return buf.getvalue()
+
+    except ImportError:
+        # Fallback minimal text PDF
+        buf = io.BytesIO()
+        buf.write(b"%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 595 842]/Parent 2 0 R>>endobj\nxref\n0 4\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n197\n%%EOF")
+        return buf.getvalue()
+
+
+# ═══════════════════════════════════════════════════════════════════
+#
+#  SCREENS
+#
+# ═══════════════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────
+#  SCREEN 1: COVER
+# ─────────────────────────────────────────────
+def screen_cover():
+    st.markdown("""
+    <div style="text-align:center; padding: 2.5rem 0 1.5rem 0;">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; font-weight:700;
+                    letter-spacing:0.35em; text-transform:uppercase; color:#d4af37; margin-bottom:1.2rem;">
+            ◈ &nbsp; A U R A D E X &nbsp; ◈
+        </div>
+        <h1 style="font-family:'Cormorant Garamond',serif !important; font-size:2.6rem; font-weight:700;
+                   color:#f0f1f3; line-height:1.2; margin:0 0 1rem 0;">
+            Apenas <span style="color:#d4af37;">4,7%</span> das pessoas<br>
+            possuem um perfil tão raro<br>quanto o seu.
+        </h1>
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:1rem; color:#c9ced8;
+                  line-height:1.7; max-width:500px; margin:0 auto 2rem auto;">
+            Descubra os padrões ocultos que influenciam suas decisões,<br>
+            relacionamentos, dinheiro e destino.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Trust metrics
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown("""
+        <div style="text-align:center; padding:1rem; background:#161b22; border:1px solid #21262d; border-radius:6px;">
+            <div style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:700; color:#d4af37;">25k+</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; color:#7d8590; letter-spacing:0.1em; text-transform:uppercase; margin-top:0.2rem;">Perfis Analisados</div>
+        </div>""", unsafe_allow_html=True)
+    with col2:
+        st.markdown("""
+        <div style="text-align:center; padding:1rem; background:#161b22; border:1px solid #21262d; border-radius:6px;">
+            <div style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:700; color:#d4af37;">93%</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; color:#7d8590; letter-spacing:0.1em; text-transform:uppercase; margin-top:0.2rem;">Precisão Comportamental</div>
+        </div>""", unsafe_allow_html=True)
+    with col3:
+        st.markdown("""
+        <div style="text-align:center; padding:1rem; background:#161b22; border:1px solid #21262d; border-radius:6px;">
+            <div style="font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:700; color:#d4af37;">5 min</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; color:#7d8590; letter-spacing:0.1em; text-transform:uppercase; margin-top:0.2rem;">Resultado Imediato</div>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    divider()
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="text-align:center; margin-bottom:1rem;">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.72rem; color:#7d8590; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.5rem;">
+            O que você vai descobrir
+        </div>
+    </div>""", unsafe_allow_html=True)
+
+    features = [
+        ("◆", "Arquétipo Principal", "O núcleo da sua personalidade e potencial"),
+        ("✦", "Perfil Financeiro", "Seus padrões ocultos com dinheiro e prosperidade"),
+        ("◈", "Perfil Amoroso", "Seus padrões de vínculo e compatibilidade"),
+        ("⋆", "Talento Oculto", "O dom que ainda não foi plenamente ativado"),
+        ("◎", "Plano de Evolução", "Próximos passos concretos para seu desenvolvimento"),
+    ]
+    for sym, title, desc in features:
         st.markdown(f"""
-            <a href="https://wa.me/?text={encoded_copy}" target="_blank" style="text-decoration:none;">
-                <button style="width: 100%; background: #25D366; color: white !important; font-weight: bold; font-size:1.05rem; letter-spacing:1px; border-radius: 6px; border: none; padding: 14px 20px; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.2);">
-                    📱 COMPARTILHAR NO WHATSAPP
-                </button>
-            </a>
-        """, unsafe_allow_html=True)
+        <div style="display:flex; align-items:center; gap:0.85rem; padding:0.75rem 0;
+                    border-bottom:1px solid #21262d;">
+            <div style="color:#d4af37; font-size:1rem; min-width:1.5rem;">{sym}</div>
+            <div>
+                <div style="font-family:'Space Grotesk',sans-serif; font-size:0.88rem; font-weight:600; color:#f0f1f3;">{title}</div>
+                <div style="font-family:'Space Grotesk',sans-serif; font-size:0.75rem; color:#7d8590; margin-top:0.1rem;">{desc}</div>
+            </div>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("INICIAR ANÁLISE", key="btn_start"):
+        go_to("identify")
+
+    st.markdown("""
+    <div style="text-align:center; margin-top:1.5rem;">
+        <span style="font-family:'Space Grotesk',sans-serif; font-size:0.7rem; color:#7d8590;">
+            Análise baseada em psicologia junguiana e modelos comportamentais contemporâneos.<br>
+            Seus dados são processados com total privacidade.
+        </span>
+    </div>""", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────
+#  SCREEN 2: IDENTIFY
+# ─────────────────────────────────────────────
+def screen_identify():
+    st.markdown("""
+    <div style="text-align:center; padding:2rem 0 1.5rem 0;">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; font-weight:700;
+                    letter-spacing:0.3em; text-transform:uppercase; color:#d4af37; margin-bottom:0.75rem;">
+            ◈ Etapa 1 de 3 — Identificação
+        </div>
+        <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:2rem; font-weight:600;
+                   color:#f0f1f3; margin:0 0 0.5rem 0;">
+            Antes de começar
+        </h2>
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:0.9rem; color:#7d8590;">
+            Essas informações personalizam seu diagnóstico.
+        </p>
+    </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    name = st.text_input("Seu nome", placeholder="Como você prefere ser chamado?", value=st.session_state["name"])
+    age = st.text_input("Sua idade", placeholder="Ex: 28", value=st.session_state["age"])
+    gender = st.selectbox("Identidade de gênero (opcional)", ["Prefiro não informar", "Masculino", "Feminino", "Não-binário", "Outro"])
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    if st.button("COMEÇAR DIAGNÓSTICO", key="btn_identify"):
+        if not name.strip():
+            st.warning("Por favor, insira seu nome para continuar.")
+        else:
+            st.session_state["name"] = name.strip()
+            st.session_state["age"] = age.strip()
+            st.session_state["gender"] = gender
+            st.session_state["current_q"] = 0
+            st.session_state["answers"] = {}
+            go_to("quiz")
+
+
+# ─────────────────────────────────────────────
+#  SCREEN 3: QUIZ
+# ─────────────────────────────────────────────
+def screen_quiz():
+    total = len(QUESTIONS)
+    current = st.session_state["current_q"]
+    answered = len(st.session_state["answers"])
+    progress = answered / total
+
+    # Header
+    st.markdown(f"""
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; font-weight:700;
+                    letter-spacing:0.25em; text-transform:uppercase; color:#d4af37;">
+            ◈ Diagnóstico Comportamental
+        </div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.72rem; color:#7d8590;">
+            {answered}/{total} respondidas
+        </div>
+    </div>""", unsafe_allow_html=True)
+
+    st.progress(progress)
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    if current >= total:
+        # All answered — go to loading
+        compute_scores()
+        go_to("loading")
+        return
+
+    q = QUESTIONS[current]
+    option_texts = [opt[0] for opt in q["options"]]
+
+    st.markdown(f"""
+    <div class="question-card">
+        <div class="q-number">Pergunta {current + 1} de {total}</div>
+        <div class="q-text">{q["text"]}</div>
+    </div>""", unsafe_allow_html=True)
+
+    choice = st.radio(
+        "Selecione a opção que melhor representa você:",
+        options=range(len(option_texts)),
+        format_func=lambda i: option_texts[i],
+        key=f"q_{current}",
+        label_visibility="collapsed",
+    )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    col_back, col_next = st.columns([1, 2])
+    with col_back:
+        if current > 0:
+            if st.button("← Anterior", key="btn_prev"):
+                st.session_state["current_q"] = current - 1
+                st.rerun()
+    with col_next:
+        label = "PRÓXIMA →" if current < total - 1 else "VER RESULTADO →"
+        if st.button(label, key="btn_next"):
+            st.session_state["answers"][current] = choice
+            if current < total - 1:
+                st.session_state["current_q"] = current + 1
+                st.rerun()
+            else:
+                compute_scores()
+                go_to("loading")
+
+
+# ─────────────────────────────────────────────
+#  SCREEN 4: LOADING
+# ─────────────────────────────────────────────
+def screen_loading():
+    st.markdown("""
+    <div style="text-align:center; padding:3rem 0 2rem 0;">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; font-weight:700;
+                    letter-spacing:0.3em; text-transform:uppercase; color:#d4af37; margin-bottom:1rem;">
+            ◈ Processando Análise
+        </div>
+        <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:2.2rem; font-weight:600;
+                   color:#f0f1f3; margin:0;">
+            Seu perfil está sendo gerado
+        </h2>
+    </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    steps = [
+        ("Mapeando padrões cognitivos...", 0.18),
+        ("Calculando perfil emocional...", 0.18),
+        ("Detectando arquétipos secundários...", 0.18),
+        ("Analisando tendências financeiras...", 0.18),
+        ("Identificando talentos ocultos...", 0.14),
+        ("Finalizando relatório supremo...", 0.14),
+    ]
+
+    progress_bar = st.progress(0)
+    status_placeholder = st.empty()
+    cumulative = 0.0
+
+    for step_text, duration in steps:
+        status_placeholder.markdown(f"""
+        <div style="text-align:center; padding:1.5rem;">
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.88rem; color:#c9ced8; margin-bottom:0.5rem;">
+                {step_text}
+            </div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.7rem; color:#7d8590; letter-spacing:0.08em;">
+                {int(cumulative * 100)}% concluído
+            </div>
+        </div>""", unsafe_allow_html=True)
+        time.sleep(duration)
+        cumulative = min(1.0, cumulative + (1 / len(steps)))
+        progress_bar.progress(min(1.0, cumulative))
+
+    progress_bar.progress(1.0)
+    status_placeholder.markdown("""
+    <div style="text-align:center; padding:1.5rem;">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.88rem; color:#d4af37; margin-bottom:0.5rem;">
+            ✓ Análise concluída com sucesso
+        </div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.7rem; color:#7d8590; letter-spacing:0.08em;">
+            100% concluído
+        </div>
+    </div>""", unsafe_allow_html=True)
+    time.sleep(0.5)
+    go_to("result_free")
+
+
+# ─────────────────────────────────────────────
+#  SCREEN 5: FREE RESULT
+# ─────────────────────────────────────────────
+def screen_result_free():
+    primary = st.session_state["primary"]
+    arch = ARCHETYPES[primary]
+    name = st.session_state["name"]
+    idx = st.session_state["potential_index"]
+    rarity = st.session_state["rarity_pct"]
+
+    st.markdown(f"""
+    <div style="text-align:center; padding:2rem 0 1rem 0;">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; font-weight:700;
+                    letter-spacing:0.3em; text-transform:uppercase; color:#d4af37; margin-bottom:0.75rem;">
+            ◈ Resultado da Análise — {name}
+        </div>
+        <div style="font-family:'Cormorant Garamond',serif; font-size:5rem; color:{arch['color']}; line-height:1; margin-bottom:0.5rem;">
+            {arch['symbol']}
+        </div>
+        <h1 style="font-family:'Cormorant Garamond',serif !important; font-size:2.8rem; font-weight:700;
+                   color:#d4af37; margin:0 0 0.35rem 0; line-height:1.1;">
+            {primary}
+        </h1>
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:0.9rem; color:#c9ced8; margin:0 auto;
+                  max-width:420px; line-height:1.6;">
+            {arch['tagline']}
+        </p>
+    </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # Rarity & Score
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"""
+        <div style="background:#161b22; border:1px solid #21262d; border-radius:6px; padding:1.25rem; text-align:center;">
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; color:#7d8590; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.5rem;">Raridade do Perfil</div>
+            <div style="font-family:'Cormorant Garamond',serif; font-size:2.2rem; font-weight:700; color:#d4af37; line-height:1;">{rarity}%</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.72rem; color:#7d8590; margin-top:0.25rem;">da população</div>
+        </div>""", unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"""
+        <div style="background:#161b22; border:1px solid #21262d; border-radius:6px; padding:1.25rem; text-align:center;">
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; color:#7d8590; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.5rem;">Índice de Potencial</div>
+            <div style="font-family:'Cormorant Garamond',serif; font-size:2.2rem; font-weight:700; color:#d4af37; line-height:1;">{idx}</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.72rem; color:#7d8590; margin-top:0.25rem;">de 100</div>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Description
+    st.markdown(f"""
+    <div class="glass-card">
+        <div class="section-eyebrow">Diagnóstico Principal</div>
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:0.88rem; color:#c9ced8; line-height:1.75; margin:0;">
+            {arch['description']}
+        </p>
+    </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # Locked sections
+    st.markdown("""
+    <div style="margin-bottom:0.75rem;">
+        <div class="section-eyebrow">Conteúdo do Relatório Completo</div>
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:0.82rem; color:#7d8590; margin:0.25rem 0 1rem 0;">
+            Os itens abaixo estão incluídos no Dossiê Supremo.
+        </p>
+    </div>""", unsafe_allow_html=True)
+
+    unlocked = [("◆", "Arquétipo Principal", True), ("◎", "Descrição Comportamental", True)]
+    locked = [
+        ("✦", "Arquétipo Secundário"),
+        ("⊗", "Arquétipo Sombra"),
+        ("◉", "Perfil Financeiro Completo"),
+        ("◈", "Perfil Amoroso e Compatibilidades"),
+        ("✶", "Talento Oculto"),
+        ("⋆", "Plano de Evolução — 4 passos"),
+        ("♛", "Radar Comportamental — 6 dimensões"),
+        ("○", "Carreiras com Maior Alinhamento"),
+        ("⊕", "PDF Premium para Download"),
+    ]
+
+    for sym, label in unlocked:
+        st.markdown(f"""
+        <div class="lock-item unlocked">
+            <span class="lock-icon" style="color:#d4af37;">{sym}</span>
+            <span>{label}</span>
+            <span style="margin-left:auto; color:#d4af37; font-size:0.75rem;">✓ Disponível</span>
+        </div>""", unsafe_allow_html=True)
+
+    for sym, label in locked:
+        st.markdown(f"""
+        <div class="lock-item">
+            <span class="lock-icon">🔒</span>
+            <span style="filter:blur(0px);">{label}</span>
+            <span style="margin-left:auto; color:#d4af37; font-size:0.75rem;">Premium</span>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Warning box
+    st.markdown(f"""
+    <div class="warning-box">
+        ⚠️ <strong>ATENÇÃO:</strong> Detectamos um arquétipo sombra com padrões de sabotagem financeira
+        diretamente ligados ao seu perfil como <strong>{primary}</strong>.
+        Este padrão afeta as decisões de {random.randint(60, 85)}% dos indivíduos com seu perfil sem que eles
+        percebam. O Dossiê Supremo detalha exatamente como neutralizar esse padrão.
+    </div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("VER OFERTA — DOSSIÊ SUPREMO →", key="btn_offer"):
+        go_to("offer")
+
+
+# ─────────────────────────────────────────────
+#  SCREEN 6: OFFER
+# ─────────────────────────────────────────────
+def screen_offer():
+    primary = st.session_state["primary"]
+    name = st.session_state["name"]
+
+    st.markdown(f"""
+    <div style="text-align:center; padding:2rem 0 0.5rem 0;">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; font-weight:700;
+                    letter-spacing:0.3em; text-transform:uppercase; color:#d4af37; margin-bottom:0.75rem;">
+            ◈ Oferta Exclusiva · Tempo Limitado
+        </div>
+        <h1 style="font-family:'Cormorant Garamond',serif !important; font-size:2.3rem; font-weight:700;
+                   color:#f0f1f3; margin:0 0 0.5rem 0; line-height:1.25;">
+            {name}, seu diagnóstico está<br>
+            <span style="color:#d4af37;">90% incompleto</span>
+        </h1>
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:0.9rem; color:#7d8590; max-width:420px; margin:0 auto;">
+            Você viu apenas a superfície. O que realmente define suas decisões está no nível mais profundo do relatório.
+        </p>
+    </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # Product box
+    st.markdown("""
+    <div style="background:linear-gradient(135deg, rgba(212,175,55,0.06), rgba(124,92,191,0.04));
+                border:1px solid rgba(212,175,55,0.25); border-radius:8px; padding:2rem; margin-bottom:1.25rem;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; font-weight:700;
+                            letter-spacing:0.2em; text-transform:uppercase; color:#d4af37; margin-bottom:0.4rem;">
+                    Produto Premium
+                </div>
+                <div style="font-family:'Cormorant Garamond',serif; font-size:1.7rem; font-weight:700; color:#f0f1f3; line-height:1.2;">
+                    Dossiê Arquétipo Supremo
+                </div>
+                <div style="font-family:'Space Grotesk',sans-serif; font-size:0.8rem; color:#7d8590; margin-top:0.3rem;">
+                    Relatório completo · PDF Premium · Acesso imediato
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-family:'Space Grotesk',sans-serif; font-size:0.72rem; color:#7d8590;
+                            text-decoration:line-through; margin-bottom:0.1rem;">De R$ 47,00</div>
+                <div style="font-family:'Cormorant Garamond',serif; font-size:3rem; font-weight:700;
+                            color:#d4af37; line-height:1;">R$ 4,90</div>
+                <div style="font-family:'Space Grotesk',sans-serif; font-size:0.68rem; color:#7d8590;">pagamento único</div>
+            </div>
+        </div>
+    </div>""", unsafe_allow_html=True)
+
+    # Benefits
+    benefits = [
+        ("◆", "Arquétipo Principal — análise profunda e expandida"),
+        ("✦", "Arquétipo Secundário — como ele modifica seu perfil"),
+        ("⊗", "Arquétipo Sombra — sabotadores e como neutralizá-los"),
+        ("⋆", "Talento Oculto — o dom ainda não ativado"),
+        ("◈", "Perfil Amoroso — compatibilidades e padrões de vínculo"),
+        ("♛", "Perfil Financeiro — forças, riscos e estratégias"),
+        ("◉", "Perfil Profissional — vocação e ambiente ideal"),
+        ("○", "Radar Comportamental — 6 dimensões com pontuações"),
+        ("✶", "Mapa de Compatibilidades entre arquétipos"),
+        ("⊕", "Plano de Evolução — 4 passos concretos"),
+        ("◎", "PDF Premium — 10+ páginas, design exclusivo"),
+    ]
+    for sym, label in benefits:
+        st.markdown(f"""
+        <div style="display:flex; align-items:flex-start; gap:0.65rem; padding:0.45rem 0;
+                    font-family:'Space Grotesk',sans-serif; font-size:0.85rem; color:#c9ced8;">
+            <span style="color:#d4af37; font-size:0.9rem; margin-top:0.05rem;">{sym}</span>
+            <span>{label}</span>
+        </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # Social proof
+    testimonials = [
+        ("A.M., 34 anos", "\"O diagnóstico do meu arquétipo sombra foi perturbadoramente preciso. Reconheci padrões que nunca tinha nomeado antes.\""),
+        ("C.R., 28 anos", "\"Compartilhei com meu terapeuta. Ela disse que em 20 minutos o relatório identificou o que levamos 3 sessões para mapear.\""),
+        ("F.L., 41 anos", "\"A parte do perfil financeiro me fez repensar decisões que eu estava prestes a tomar. Valeu muito mais do que paguei.\""),
+    ]
+    for author, text in testimonials:
+        st.markdown(f"""
+        <div style="background:#161b22; border:1px solid #21262d; border-left:2px solid #d4af37;
+                    border-radius:4px; padding:1rem 1.25rem; margin-bottom:0.75rem;">
+            <p style="font-family:'Cormorant Garamond',serif; font-size:1rem; color:#c9ced8;
+                      line-height:1.6; margin:0 0 0.5rem 0; font-style:italic;">{text}</p>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.72rem; color:#7d8590;">{author}</div>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Demo/simulation of payment
+    st.markdown("""
+    <div style="text-align:center; margin-bottom:0.75rem;">
+        <span style="font-family:'Space Grotesk',sans-serif; font-size:0.72rem; color:#7d8590;">
+            🔒 Ambiente seguro · Acesso imediato após confirmação
+        </span>
+    </div>""", unsafe_allow_html=True)
+
+    if st.button("QUERO MEU DOSSIÊ SUPREMO — R$ 4,90 →", key="btn_pay"):
+        # In a real app, this would redirect to payment gateway
+        # For demo, we unlock directly
+        st.session_state["paid"] = True
+        go_to("premium")
+
+    if st.button("Ver resultado gratuito novamente", key="btn_back_free"):
+        go_to("result_free")
+
+    st.markdown("""
+    <div style="text-align:center; margin-top:1rem;">
+        <span style="font-family:'Space Grotesk',sans-serif; font-size:0.68rem; color:#7d8590;">
+            Garantia: Se não ficar satisfeito, devolvemos seu dinheiro em 7 dias.
+        </span>
+    </div>""", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────
+#  SCREEN 7: PREMIUM REPORT
+# ─────────────────────────────────────────────
+def screen_premium():
+    primary = st.session_state["primary"]
+    secondary = st.session_state["secondary"]
+    shadow = st.session_state["shadow"]
+    arch = ARCHETYPES[primary]
+    arch2 = ARCHETYPES[secondary]
+    arch_s = ARCHETYPES[shadow]
+    name = st.session_state["name"]
+    idx = st.session_state["potential_index"]
+    rarity = st.session_state["rarity_pct"]
+
+    # ── HEADER ──
+    st.markdown(f"""
+    <div style="text-align:center; padding:1.5rem 0 1rem 0;">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; font-weight:700;
+                    letter-spacing:0.3em; text-transform:uppercase; color:#d4af37; margin-bottom:0.75rem;">
+            ◈ Dossiê Supremo · Acesso Premium
+        </div>
+        <h1 style="font-family:'Cormorant Garamond',serif !important; font-size:2.2rem; font-weight:700;
+                   color:#f0f1f3; margin:0 0 0.25rem 0;">
+            Relatório de {name}
+        </h1>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.75rem; color:#7d8590;">
+            Gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M')} · Dossiê Arquétipo Supremo
+        </div>
+    </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # ── POTENCIAL INDEX ──
+    st.markdown(f"""
+    <div class="section-eyebrow">Diagnóstico Geral</div>
+    <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:1.8rem; color:#f0f1f3; margin:0 0 1rem 0;">
+        Índice Geral de Potencial
+    </h2>""", unsafe_allow_html=True)
+
+    col_gauge, col_info = st.columns([1, 1])
+    with col_gauge:
+        st.plotly_chart(make_gauge(idx, arch["color"]), use_container_width=True, config={"displayModeBar": False})
+    with col_info:
+        st.markdown(f"""
+        <div style="padding:1rem 0;">
+            <div style="font-family:'Cormorant Garamond',serif; font-size:3.5rem; font-weight:700;
+                        color:{arch['color']}; line-height:1; margin-bottom:0.25rem;">{idx}/100</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.85rem; color:#c9ced8; line-height:1.6; margin-bottom:1rem;">
+                Seu índice combina inteligência estratégica, liderança, criatividade e resiliência adaptativa.
+            </div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.75rem; color:#7d8590; margin-bottom:0.5rem;">
+                Raridade do perfil
+            </div>
+            <div class="rarity-bar">
+                <div class="rarity-fill" style="width:{min(rarity*4, 100)}%;"></div>
+            </div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:0.85rem; color:#d4af37; font-weight:600;">
+                Top {rarity}% da população
+            </div>
+        </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # ── RADAR ──
+    st.markdown(f"""
+    <div class="section-eyebrow">Mapa Comportamental</div>
+    <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:1.8rem; color:#f0f1f3; margin:0 0 1rem 0;">
+        Radar de Competências
+    </h2>""", unsafe_allow_html=True)
+
+    st.plotly_chart(make_radar(arch["traits"], arch["color"]), use_container_width=True, config={"displayModeBar": False})
+
+    # Trait breakdown
+    for trait, val in arch["traits"].items():
+        level = "Alto" if val >= 80 else "Médio" if val >= 60 else "Em Desenvolvimento"
+        level_color = "#27ae60" if val >= 80 else "#f39c12" if val >= 60 else "#7d8590"
+        st.markdown(f"""
+        <div class="stat-row">
+            <span class="stat-label">{trait}</span>
+            <span style="color:{level_color}; font-family:'Space Grotesk',sans-serif; font-size:0.75rem;">{level}</span>
+            <span class="stat-value">{val}/100</span>
+        </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # ── ARQUÉTIPO PRINCIPAL ──
+    st.markdown(f"""
+    <div class="section-eyebrow">Arquétipo Principal</div>
+    <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
+        <div style="font-size:3rem; color:{arch['color']};">{arch['symbol']}</div>
+        <div>
+            <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:2rem;
+                       color:#d4af37; margin:0 0 0.25rem 0;">{primary}</h2>
+            <p style="font-family:'Space Grotesk',sans-serif; font-size:0.85rem; color:#7d8590; margin:0;">
+                {arch['tagline']}
+            </p>
+        </div>
+    </div>
+    <div class="glass-card">
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:0.88rem; color:#c9ced8; line-height:1.75; margin:0;">
+            {arch['description']}
+        </p>
+    </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # ── ARQUÉTIPO SECUNDÁRIO ──
+    st.markdown(f"""
+    <div class="section-eyebrow">Arquétipo Secundário</div>
+    <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
+        <div style="font-size:2.5rem; color:{arch2['color']};">{arch2['symbol']}</div>
+        <div>
+            <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:1.7rem;
+                       color:#f0f1f3; margin:0 0 0.2rem 0;">{secondary}</h2>
+            <p style="font-family:'Space Grotesk',sans-serif; font-size:0.82rem; color:#7d8590; margin:0;">
+                {arch2['tagline']}
+            </p>
+        </div>
+    </div>
+    <div class="glass-card">
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:0.88rem; color:#c9ced8; line-height:1.75; margin:0;">
+            {arch2['description'][:400]}...
+        </p>
+        <div style="margin-top:1rem; padding-top:0.75rem; border-top:1px solid #21262d;">
+            <p style="font-family:'Space Grotesk',sans-serif; font-size:0.8rem; color:#7d8590; margin:0;">
+                <strong style="color:#d4af37;">Influência combinada:</strong> O arquétipo {secondary} amplifica as características
+                de {primary} nos contextos de {', '.join(list(arch2['traits'].keys())[:2]).lower()}.
+            </p>
+        </div>
+    </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # ── ARQUÉTIPO SOMBRA ──
+    st.markdown(f"""
+    <div class="section-eyebrow">Arquétipo Sombra</div>
+    <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1rem;">
+        <div style="font-size:2.5rem; color:#7d8590;">{arch_s['symbol']}</div>
+        <div>
+            <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:1.7rem;
+                       color:#f0f1f3; margin:0 0 0.2rem 0;">{shadow}</h2>
+            <p style="font-family:'Space Grotesk',sans-serif; font-size:0.82rem; color:#7d8590; margin:0;">
+                Padrões reprimidos e sabotadores internos
+            </p>
+        </div>
+    </div>
+    <div class="glass-card" style="border-color:rgba(200,50,50,0.2);">
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:0.78rem; color:#7d8590; margin:0 0 0.75rem 0; letter-spacing:0.05em; text-transform:uppercase;">
+            Padrão de sabotagem identificado
+        </p>
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:0.88rem; color:#c9ced8; line-height:1.75; margin:0;">
+            {arch["shadow"]}
+        </p>
+    </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # ── FINANCIAL ──
+    st.markdown(f"""
+    <div class="section-eyebrow">Inteligência Financeira</div>
+    <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:1.8rem; color:#f0f1f3; margin:0 0 1rem 0;">
+        Perfil Financeiro
+    </h2>
+    <div class="glass-card">
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:0.88rem; color:#c9ced8; line-height:1.75; margin:0;">
+            {arch['financial']}
+        </p>
+    </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # ── LOVE ──
+    st.markdown(f"""
+    <div class="section-eyebrow">Inteligência Relacional</div>
+    <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:1.8rem; color:#f0f1f3; margin:0 0 1rem 0;">
+        Perfil Amoroso
+    </h2>
+    <div class="glass-card">
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:0.88rem; color:#c9ced8; line-height:1.75; margin:0;">
+            {arch['love']}
+        </p>
+    </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # ── CAREER ──
+    st.markdown(f"""
+    <div class="section-eyebrow">Vocação e Potencial</div>
+    <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:1.8rem; color:#f0f1f3; margin:0 0 1rem 0;">
+        Perfil de Carreira
+    </h2>""", unsafe_allow_html=True)
+
+    for career in arch["career"]:
+        st.markdown(f"""
+        <div style="display:flex; align-items:center; gap:0.75rem; padding:0.75rem 1rem;
+                    background:#161b22; border:1px solid #21262d; border-radius:4px; margin-bottom:0.5rem;">
+            <span style="color:#d4af37;">◆</span>
+            <span style="font-family:'Space Grotesk',sans-serif; font-size:0.88rem; color:#c9ced8;">{career}</span>
+        </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # ── HIDDEN TALENT ──
+    st.markdown(f"""
+    <div class="section-eyebrow">Potencial Não Ativado</div>
+    <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:1.8rem; color:#f0f1f3; margin:0 0 1rem 0;">
+        Talento Oculto
+    </h2>
+    <div class="glass-card" style="border-color:rgba(212,175,55,0.3); background:rgba(212,175,55,0.04);">
+        <div style="font-family:'Cormorant Garamond',serif; font-size:1.3rem; font-weight:600;
+                    color:#d4af37; margin-bottom:0.75rem;">
+            {arch['talent'].split('—')[0].strip() if '—' in arch['talent'] else arch['talent'][:50]}
+        </div>
+        <p style="font-family:'Space Grotesk',sans-serif; font-size:0.88rem; color:#c9ced8; line-height:1.75; margin:0;">
+            {arch['talent']}
+        </p>
+    </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # ── EVOLUTION PLAN ──
+    st.markdown(f"""
+    <div class="section-eyebrow">Desenvolvimento Pessoal</div>
+    <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:1.8rem; color:#f0f1f3; margin:0 0 1rem 0;">
+        Plano de Evolução
+    </h2>""", unsafe_allow_html=True)
+
+    for i, step in enumerate(arch["evolution"], 1):
+        st.markdown(f"""
+        <div style="display:flex; align-items:flex-start; gap:1rem; padding:1rem;
+                    background:#161b22; border:1px solid #21262d; border-radius:4px; margin-bottom:0.75rem;">
+            <div style="font-family:'Cormorant Garamond',serif; font-size:1.5rem; font-weight:700;
+                        color:#d4af37; line-height:1; min-width:1.5rem;">{i}</div>
+            <p style="font-family:'Space Grotesk',sans-serif; font-size:0.85rem; color:#c9ced8;
+                      line-height:1.65; margin:0;">{step}</p>
+        </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # ── COMPATIBILITIES ──
+    st.markdown(f"""
+    <div class="section-eyebrow">Mapa de Conexões</div>
+    <h2 style="font-family:'Cormorant Garamond',serif !important; font-size:1.8rem; color:#f0f1f3; margin:0 0 1rem 0;">
+        Compatibilidades Arquetípicas
+    </h2>""", unsafe_allow_html=True)
+
+    for compat_name in arch["compatible"]:
+        c_arch = ARCHETYPES[compat_name]
+        st.markdown(f"""
+        <div style="display:flex; align-items:center; gap:1rem; padding:0.85rem 1rem;
+                    background:#161b22; border:1px solid #21262d; border-radius:4px; margin-bottom:0.5rem;">
+            <div style="font-size:1.5rem; color:{c_arch['color']};">{c_arch['symbol']}</div>
+            <div>
+                <div style="font-family:'Space Grotesk',sans-serif; font-size:0.88rem; font-weight:600; color:#d4af37;">
+                    {compat_name}
+                </div>
+                <div style="font-family:'Space Grotesk',sans-serif; font-size:0.75rem; color:#7d8590;">
+                    {c_arch['tagline']}
+                </div>
+            </div>
+        </div>""", unsafe_allow_html=True)
+
+    divider()
+
+    # ── RARITY CERTIFICATE ──
+    st.markdown(f"""
+    <div style="background:linear-gradient(135deg, rgba(212,175,55,0.08), rgba(124,92,191,0.05));
+                border:1px solid rgba(212,175,55,0.3); border-radius:8px; padding:2.5rem; text-align:center; margin-bottom:2rem;">
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.65rem; font-weight:700;
+                    letter-spacing:0.3em; text-transform:uppercase; color:#d4af37; margin-bottom:1rem;">
+            ◈ Certificado de Raridade · AuraDex
+        </div>
+        <div style="font-family:'Cormorant Garamond',serif; font-size:1.6rem; font-weight:600; color:#f0f1f3; margin-bottom:0.5rem;">
+            {name}
+        </div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.9rem; color:#c9ced8; line-height:1.7; margin-bottom:1rem;">
+            possui o arquétipo <strong style="color:#d4af37;">{primary}</strong>,<br>
+            identificado em apenas <strong style="color:#d4af37;">{rarity}%</strong> da população analisada.
+        </div>
+        <div style="font-family:'Cormorant Garamond',serif; font-size:2.5rem; font-weight:700; color:{arch['color']};">
+            {arch['symbol']}
+        </div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:0.68rem; color:#7d8590; margin-top:1rem;">
+            Índice de Potencial: {idx}/100 · {datetime.now().strftime('%d/%m/%Y')}
+        </div>
+    </div>""", unsafe_allow_html=True)
+
+    # ── PDF DOWNLOAD ──
+    st.markdown("""
+    <div class="section-eyebrow" style="margin-bottom:0.75rem;">Downloads e Compartilhamento</div>""", unsafe_allow_html=True)
+
+    col_pdf, col_wa = st.columns(2)
+
+    with col_pdf:
+        try:
+            pdf_bytes = generate_pdf_bytes()
+            st.download_button(
+                label="⬇ BAIXAR PDF PREMIUM",
+                data=pdf_bytes,
+                file_name=f"AuraDex_{name.replace(' ', '_')}_Dossie_Supremo.pdf",
+                mime="application/pdf",
+                key="btn_pdf",
+            )
+        except Exception as e:
+            st.error(f"Erro ao gerar PDF: {e}")
+
+    with col_wa:
+        wa_text = f"Acabei de descobrir meu Arquétipo Supremo no AuraDex! Sou {primary} — um perfil que ocorre em apenas {rarity}% das pessoas. Faça seu teste:"
+        wa_url = f"https://wa.me/?text={wa_text.replace(' ', '%20')}"
+        st.markdown(f"""
+        <a href="{wa_url}" target="_blank" style="
+            display:block; width:100%; text-align:center;
+            background:#25D366; color:#fff; border-radius:4px;
+            padding:0.85rem 1rem; font-family:'Space Grotesk',sans-serif;
+            font-weight:700; font-size:0.88rem; letter-spacing:0.08em;
+            text-transform:uppercase; text-decoration:none;
+            box-shadow:0 0 20px rgba(37,211,102,0.2);
+        ">
+            📲 COMPARTILHAR NO WHATSAPP
+        </a>""", unsafe_allow_html=True)
+
+    divider()
+
+    if st.button("↩ Refazer análise", key="btn_restart"):
+        for key in ["screen", "name", "age", "gender", "answers", "scores",
+                    "primary", "secondary", "shadow", "paid", "potential_index",
+                    "rarity_pct", "current_q"]:
+            if key in st.session_state:
+                del st.session_state[key]
+        init_state()
+        go_to("cover")
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  ROUTER
+# ═══════════════════════════════════════════════════════════════════
+def main():
+    screen = st.session_state.get("screen", "cover")
+
+    if screen == "cover":
+        screen_cover()
+    elif screen == "identify":
+        screen_identify()
+    elif screen == "quiz":
+        screen_quiz()
+    elif screen == "loading":
+        screen_loading()
+    elif screen == "result_free":
+        screen_result_free()
+    elif screen == "offer":
+        screen_offer()
+    elif screen == "premium":
+        screen_premium()
+    else:
+        go_to("cover")
+
+
+if __name__ == "__main__":
+    main()
+
+    
+   
